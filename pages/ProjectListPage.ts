@@ -40,7 +40,19 @@ export class ProjectListPage {
   async searchProject(searchValue: string) {
     await this.waitForProjectList();
 
+    const responsePromise = this.page
+      .waitForResponse(
+        (res) =>
+          res.url().includes('/api/projects') &&
+          res.url().includes('search=') &&
+          res.status() === 200,
+        { timeout: 15_000 }
+      )
+      .catch(() => null);
+
     await this.searchInput.fill(searchValue);
+    await responsePromise;
+    await this.page.waitForTimeout(500);
   }
 
   async openProject(projectName: string) {

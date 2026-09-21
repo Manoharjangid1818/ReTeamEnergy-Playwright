@@ -12,8 +12,7 @@ export class ProjectDetailsPage {
     this.page = page;
 
     this.customerProfileTab = page.getByRole('tab', {
-      name: 'Customer profile',
-      exact: true,
+      name: /^Customer Profile$/i,
     });
 
     this.addCustomerProfileButton = page.getByRole('button', {
@@ -32,8 +31,9 @@ export class ProjectDetailsPage {
     });
   }
 
-  async waitForPageReady() {  
-    await expect(this.customerProfileTab).toBeVisible();
+  async waitForPageReady() {
+    await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
+    await expect(this.customerProfileTab).toBeVisible({ timeout: 15_000 });
   }
 
   async openCustomerProfile() {

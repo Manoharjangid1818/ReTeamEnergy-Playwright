@@ -64,20 +64,33 @@ export class BasicProjectDetailsPage {
   }
 
   async fillProjectAssessmentDateTime() {
-    // The form rejects an assessment start time that is not in the future.
-    // One minute is enough to satisfy the validation without scheduling the
-    // project for a different day.
-    const assessmentStart = new Date(Date.now() + 60_000);
+    const assessmentStart = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const month = String(assessmentStart.getMonth() + 1).padStart(2, '0');
     const day = String(assessmentStart.getDate()).padStart(2, '0');
-    const year = assessmentStart.getFullYear();
-    const hour = assessmentStart.getHours() % 12 || 12;
+    const year = String(assessmentStart.getFullYear());
+    const hour = String(assessmentStart.getHours() % 12 || 12).padStart(2, '0');
     const minutes = String(assessmentStart.getMinutes()).padStart(2, '0');
     const meridiem = assessmentStart.getHours() >= 12 ? 'PM' : 'AM';
-    const dateTime = `${month}/${day}/${year} ${hour}:${minutes} ${meridiem}`;
 
-    await this.projectAssessmentDateTime.click();
-    await this.page.keyboard.type(dateTime);
+    const monthSpin = this.projectAssessmentDateTime.getByRole('spinbutton', { name: 'Month' });
+    const daySpin = this.projectAssessmentDateTime.getByRole('spinbutton', { name: 'Day' });
+    const yearSpin = this.projectAssessmentDateTime.getByRole('spinbutton', { name: 'Year' });
+    const hoursSpin = this.projectAssessmentDateTime.getByRole('spinbutton', { name: 'Hours' });
+    const minutesSpin = this.projectAssessmentDateTime.getByRole('spinbutton', { name: 'Minutes' });
+    const meridiemSpin = this.projectAssessmentDateTime.getByRole('spinbutton', { name: 'Meridiem' });
+
+    await monthSpin.click();
+    await this.page.keyboard.type(month);
+    await daySpin.click();
+    await this.page.keyboard.type(day);
+    await yearSpin.click();
+    await this.page.keyboard.type(year);
+    await hoursSpin.click();
+    await this.page.keyboard.type(hour);
+    await minutesSpin.click();
+    await this.page.keyboard.type(minutes);
+    await meridiemSpin.click();
+    await this.page.keyboard.type(meridiem);
   }
 
   async selectAssessor(assessorName: string) {
@@ -143,5 +156,6 @@ export class BasicProjectDetailsPage {
         exact: true,
       })
     ).toBeVisible();
+    await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
   }
 }
