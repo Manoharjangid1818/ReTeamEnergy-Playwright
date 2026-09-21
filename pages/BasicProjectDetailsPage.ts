@@ -33,7 +33,7 @@ export class BasicProjectDetailsPage {
     this.state = page.getByRole('textbox', { name: 'State *' });
     this.zip = page.getByRole('textbox', { name: 'Zip *' });
 
-    this.projectAssessmentDateTime = page.getByRole('group', { name: 'Project Assessment Start Date and Time *',})
+    this.projectAssessmentDateTime = page.getByRole('group', { name: 'Project Assessment Start Date and Time *', });
     this.projectType = page.getByRole('combobox', { name: 'Project Type *' });
     this.buildingType = page.getByRole('combobox', { name: 'Building Type *' });
     this.configuration = page.getByRole('combobox', { name: 'Configuration *' });
@@ -96,57 +96,59 @@ export class BasicProjectDetailsPage {
   async selectAssessor(assessorName: string) {
     await this.assessor.fill(assessorName);
 
-    await this.page.getByRole('option',{ name: assessorName }).click();
+    await this.page.getByRole('option', { name: assessorName }).click();
   }
 
   async selectStreetAddress(address: string) {
     await this.streetAddress.fill(address);
 
-    // Wait for address suggestions to appear
-    await this.page.waitForTimeout(1000);
-
-    // Select the address using Enter
-    await this.streetAddress.press('Enter');
+    const option = this.page.getByText(address).first();
+    try {
+      await option.waitFor({ state: 'visible', timeout: 5000 });
+      await option.click();
+    } catch {
+      await this.streetAddress.press('Enter');
+    }
   }
 
   async verifyAddressDetails(data: {
     city: string;
     state: string;
     zip: string;
-    }) {
-        await expect(this.city).toHaveValue(data.city);
-        await expect(this.state).toHaveValue(data.state);
-        await expect(this.zip).toHaveValue(data.zip);
-    }
+  }) {
+    await expect(this.city).toHaveValue(data.city);
+    await expect(this.state).toHaveValue(data.state);
+    await expect(this.zip).toHaveValue(data.zip);
+  }
 
   async selectProjectType(projectType: string) {
     await this.projectType.click();
 
-    await this.page.getByRole('option', {name: projectType }).click();
+    await this.page.getByRole('option', { name: projectType }).click();
   }
 
   async selectBuildingType(buildingType: string) {
     await this.buildingType.click();
 
     await this.page
-        .getByRole('option', { name: buildingType })
-        .click();
+      .getByRole('option', { name: buildingType })
+      .click();
   }
 
   async selectConfiguration(configuration: string) {
     await this.configuration.click();
 
     await this.page
-        .getByRole('option', { name: configuration })
-        .click();
+      .getByRole('option', { name: configuration })
+      .click();
   }
 
   async selectProgramType(programType: string) {
     await this.programType.click();
 
     await this.page
-        .getByRole('option', { name: programType })
-        .click();
+      .getByRole('option', { name: programType })
+      .click();
   }
 
   async continue() {
@@ -157,5 +159,15 @@ export class BasicProjectDetailsPage {
       })
     ).toBeVisible();
     await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
+
+    const match = this.page.url().match(/\/project-details\/([a-zA-Z0-9-]+)/);
+    if (match) {
+      try {
+        const fsSync = await import('node:fs');
+        const pathSync = await import('node:path');
+        const targetPath = pathSync.resolve('playwright/.auth/createdProject.json');
+        fsSync.writeFileSync(targetPath, JSON.stringify({ id: match[1] }, null, 2), 'utf8');
+      } catch (e) {}
+    }
   }
 }

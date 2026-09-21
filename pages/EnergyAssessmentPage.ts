@@ -9,8 +9,7 @@ export class EnergyAssessmentPage {
 
   constructor(private readonly page: Page) {
     this.energyAssessmentTab = page.getByRole('tab', {
-      name: 'Energy assessment',
-      exact: true,
+      name: /^Energy assessment$/i,
     });
     this.goBackToProjectDetailsLink = page.getByRole('link', {
       name: 'Go Back to Project Details',
@@ -18,26 +17,44 @@ export class EnergyAssessmentPage {
   }
 
   async open() {
-    await this.energyAssessmentTab.click();
-    await expect(this.page.getByText('Not Started', { exact: true })).toBeVisible();
+    await expect(this.energyAssessmentTab).toBeVisible({ timeout: 20_000 });
+    await expect(this.energyAssessmentTab).toBeEnabled({ timeout: 20_000 });
+    const isSelected = await this.energyAssessmentTab.getAttribute('aria-selected').catch(() => null);
+    if (isSelected !== 'true') {
+      await this.energyAssessmentTab.click();
+    }
+    await expect(this.page.getByText('Not Started', { exact: true })).toBeVisible({ timeout: 20_000 });
   }
 
-  /**
-   * Returns the column that contains the supplied status heading. Replace the
-   * ancestor selector with a data-testid if the application adds one.
-   */
   getColumn(status: AssessmentStatus): Locator {
     return this.page
       .getByText(status, { exact: true })
-      .locator('xpath=ancestor::div[1]');
+      .locator('xpath=ancestor::div[2]');
   }
 
   taskCardIn(status: AssessmentStatus, taskName: string): Locator {
     return this.getColumn(status).getByText(taskName, { exact: true });
   }
 
+  taskCard(taskName: string): Locator {
+    return this.page
+      .locator('div')
+      .filter({ has: this.page.getByText(taskName, { exact: true }) })
+      .filter({ has: this.page.getByText(/\d+\s*\/\s*\d+ sections/) })
+      .last(); // innermost div that contains both the title and the progress text
+  }
+
+  async expectSectionsProgress(taskName: string, done: number, total: number) {
+    await expect(this.taskCard(taskName)).toContainText(`${done} / ${total} sections`);
+  }
+
   async openTask(taskName: string) {
-    await this.page.getByText(taskName, { exact: true }).first().click();
+    const card = this.taskCard(taskName);
+    if (await card.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await card.click();
+    } else {
+      await this.page.getByText(taskName, { exact: true }).first().click();
+    }
   }
 
   async expectTaskInColumn(taskName: string, status: AssessmentStatus) {
@@ -49,13 +66,14 @@ export class EnergyAssessmentPage {
   }
 
   sectionsProgressFor(taskName: string): Locator {
-    return this.page
-      .getByText(taskName, { exact: true })
-      .locator('xpath=ancestor::div[1]')
-      .getByText(/\d+\s*\/\s*\d+ sections/);
+    return this.taskCard(taskName).getByText(/\d+\s*\/\s*\d+ sections/);
   }
 
   async goBackToProjectDetails() {
-    await this.goBackToProjectDetailsLink.click();
+    if (this.page.url().includes('/project-details/')) {
+      return;
+    }
+    await this.goBackToProjectDetailsLink.click().catch(() => null);
+    await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
   }
 }

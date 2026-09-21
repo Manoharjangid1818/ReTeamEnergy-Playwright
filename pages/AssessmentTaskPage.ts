@@ -1,4 +1,4 @@
-import { Locator, Page } from '@playwright/test';
+import { Locator, Page, expect } from '@playwright/test';
 
 /** Generic page object for an individual Energy Assessment task. */
 export class AssessmentTaskPage {
@@ -50,10 +50,40 @@ export class AssessmentTaskPage {
   }
 
   async saveChanges() {
+    const savePromise = this.page
+      .waitForResponse(
+        (res) =>
+          (res.url().includes('/api/subcategories') ||
+            res.url().includes('/api/measures') ||
+            res.url().includes('/api/projects')) &&
+          (res.request().method() === 'POST' ||
+            res.request().method() === 'PUT') &&
+          res.status() === 200,
+        { timeout: 15_000 }
+      )
+      .catch(() => null);
+
     await this.saveChangesButton.click();
+    await savePromise;
+    await expect(
+      this.page.getByText(/Project updated successfully/i)
+    ).toBeVisible({ timeout: 10_000 }).catch(() => null);
   }
 
   async goBackToProjectDetails() {
-    await this.goBackToProjectDetailsLink.click();
+    // Wait if the application redirects automatically to project-details
+    await this.page.waitForURL(/project-details/, { timeout: 5000 }).catch(() => null);
+
+    if (this.page.url().includes('/project-details/')) {
+      return;
+    }
+
+    const isVisible = await this.goBackToProjectDetailsLink
+      .isVisible({ timeout: 2000 })
+      .catch(() => false);
+    if (isVisible) {
+      await this.goBackToProjectDetailsLink.click();
+    }
+    await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
   }
 }

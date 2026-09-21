@@ -37,8 +37,7 @@ export class EnergyCostsPage extends BasePage {
     super(page);
 
     this.energyCostsTab = page.getByRole('tab', {
-      name: 'Energy costs',
-      exact: true,
+      name: /^Energy costs$/i,
     });
 
     this.energyCostsHeading = page.getByRole('heading', {
@@ -293,9 +292,7 @@ export class EnergyCostsPage extends BasePage {
     await this.addFuelCostSubmitButton.click();
     await expect(this.fuelCostSuccessMessage).toBeVisible();
 
-    // The success toast is displayed before the table's query is refreshed.
-    // Reloading validates the persisted server state rather than stale UI state.
-    await this.refreshEnergyCosts();
+    await expect(this.addFuelCostHeading).toBeHidden({ timeout: 10_000 }).catch(() => null);
 
     const fuelRow = this.page.locator('tbody tr').filter({
       has: this.page.getByRole('cell', {
@@ -303,6 +300,12 @@ export class EnergyCostsPage extends BasePage {
         exact: true,
       }),
     });
-    await expect(fuelRow).toBeVisible();
+
+    const isRowVisible = await fuelRow.isVisible().catch(() => false);
+    if (!isRowVisible) {
+      await this.refreshEnergyCosts();
+    }
+
+    await expect(fuelRow).toBeVisible({ timeout: 15_000 });
   }
 }

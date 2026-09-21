@@ -56,7 +56,23 @@ export class ProjectListPage {
   }
 
   async openProject(projectName: string) {
-    const projectLink = this.page
+    let specificLink: Locator | null = null;
+    try {
+      const fsSync = await import('node:fs');
+      const pathSync = await import('node:path');
+      const targetPath = pathSync.resolve('playwright/.auth/createdProject.json');
+      if (fsSync.existsSync(targetPath)) {
+        const { id } = JSON.parse(fsSync.readFileSync(targetPath, 'utf8'));
+        if (id) {
+          const candidate = this.page.locator(`a[href*="${id}"]`);
+          if (await candidate.isVisible({ timeout: 4000 }).catch(() => false)) {
+            specificLink = candidate;
+          }
+        }
+      }
+    } catch (e) {}
+
+    const projectLink = specificLink ?? this.page
       .getByRole('link')
       .filter({ hasText: projectName })
       .first();

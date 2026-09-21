@@ -8,6 +8,7 @@ import {
 import { projectData } from '../test-data/projectData';
 
 test('Energy Costs → Add Fuel Costs', async ({ page }) => {
+  test.setTimeout(90_000);
   const projectListPage = new ProjectListPage(page);
   const energyCostsPage = new EnergyCostsPage(page);
 

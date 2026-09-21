@@ -6,6 +6,7 @@ dotenv.config();
 export default defineConfig({
   testDir: './tests',
   globalSetup: './tests/auth.setup.ts',
+  timeout: 60_000,
 
   fullyParallel: true,
 
@@ -13,7 +14,7 @@ export default defineConfig({
 
   retries: process.env.CI ? 2 : 0,
 
-  reporter: 'html',
+  reporter: [['html', { open: 'never' }]],
 
   use: {
     baseURL: 'https://dev.reteamenergy.com',

@@ -8,4 +8,5 @@ export { PropertyProfilePage } from './PropertyProfilePage';
 export { EnergyCostsPage } from './EnergyCostsPage';
 export { EnergyAssessmentPage } from './EnergyAssessmentPage';
 export { AssessmentTaskPage } from './AssessmentTaskPage';
+export { AppliancesAssessmentPage } from './AppliancesAssessmentPage';
 export { Header } from './Header';
