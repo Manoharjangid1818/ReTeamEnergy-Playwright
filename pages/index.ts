@@ -16,3 +16,4 @@ export {
   AssessmentTaskPage,
 } from './EnergyAssessmentPage';
 export { Header } from './Header';
+export { SnapshotPage } from './SnapshotPage';

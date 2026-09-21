@@ -106,6 +106,7 @@ export class EnergyAssessmentPage {
       .locator('div')
       .filter({ has: this.page.getByText(taskName, { exact: true }) })
       .filter({ has: this.page.getByText(/\d+\s*\/\s*\d+ sections/) })
+      .filter({ visible: true })
       .last();
   }
 
@@ -130,7 +131,11 @@ export class EnergyAssessmentPage {
     if (await card.isVisible({ timeout: 3000 }).catch(() => false)) {
       await card.click();
     } else {
-      await this.page.getByText(taskName, { exact: true }).first().click();
+      await this.page
+        .getByText(taskName, { exact: true })
+        .filter({ visible: true })
+        .first()
+        .click();
     }
   }
 

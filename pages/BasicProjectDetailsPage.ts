@@ -243,15 +243,47 @@ export class BasicProjectDetailsPage {
     // Step 3: Verify URL redirects to project-details
     await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
 
-    // Step 4: Extract project ID from URL and persist for downstream tests
+    // Step 4: Extract project ID from URL and persist for downstream tests & .env
     const match = this.page.url().match(/\/project-details\/([a-zA-Z0-9-]+)/);
     if (match) {
+      const projectId = match[1];
+      console.log(`[Project Created] Automatically captured project ID: ${projectId}`);
       try {
         const fsSync = await import('node:fs');
         const pathSync = await import('node:path');
-        const targetPath = pathSync.resolve('playwright/.auth/createdProject.json');
-        fsSync.writeFileSync(targetPath, JSON.stringify({ id: match[1] }, null, 2), 'utf8');
-      } catch (e) {}
+
+        // 1. Ensure auth folder exists and save createdProject.json
+        const authDir = pathSync.resolve('playwright/.auth');
+        if (!fsSync.existsSync(authDir)) {
+          fsSync.mkdirSync(authDir, { recursive: true });
+        }
+        const targetPath = pathSync.resolve(authDir, 'createdProject.json');
+        fsSync.writeFileSync(
+          targetPath,
+          JSON.stringify({ id: projectId, createdAt: new Date().toISOString() }, null, 2),
+          'utf8'
+        );
+
+        // 2. Automatically update .env file so SNAPSHOT_PROJECT_ID is populated
+        const envPath = pathSync.resolve('.env');
+        if (fsSync.existsSync(envPath)) {
+          let envContent = fsSync.readFileSync(envPath, 'utf8');
+          if (/SNAPSHOT_PROJECT_ID=.*(\r?\n|$)/.test(envContent)) {
+            envContent = envContent.replace(
+              /SNAPSHOT_PROJECT_ID=.*(\r?\n|$)/,
+              `SNAPSHOT_PROJECT_ID=${projectId}$1`
+            );
+          } else {
+            envContent = envContent.trimEnd() + `\nSNAPSHOT_PROJECT_ID=${projectId}\n`;
+          }
+          fsSync.writeFileSync(envPath, envContent, 'utf8');
+        }
+
+        // 3. Set runtime environment variable for current process
+        process.env.SNAPSHOT_PROJECT_ID = projectId;
+      } catch (e) {
+        console.warn('[Project Created] Warning: Could not persist project ID:', e);
+      }
     }
   }
 }

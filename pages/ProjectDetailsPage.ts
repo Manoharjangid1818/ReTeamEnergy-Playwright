@@ -1,9 +1,18 @@
 import { Page, Locator, expect } from '@playwright/test';
 
 /**
+ * Valid tab names on the Project Details page.
+ */
+export type ProjectTab =
+  | 'Customer profile'
+  | 'Property profile'
+  | 'Snapshot'
+  | 'Energy assessment';
+
+/**
  * Page object representing the Project Details screen (/project-details/:id).
  * Manages access to different profile tabs: Customer Profile, Property Profile,
- * Energy Costs, and Energy Assessment.
+ * Energy Costs, Energy Assessment, and Snapshot.
  */
 export class ProjectDetailsPage {
   private readonly page: Page;
@@ -12,6 +21,8 @@ export class ProjectDetailsPage {
   readonly addCustomerProfileButton: Locator;
   readonly propertyProfileTab: Locator;
   readonly addPropertyProfileButton: Locator;
+  readonly snapshotTab: Locator;
+  readonly energyAssessmentTab: Locator;
 
   /**
    * Initializes tab and action button locators on the Project Details page.
@@ -41,6 +52,17 @@ export class ProjectDetailsPage {
     this.addPropertyProfileButton = page.getByRole('button', {
       name: 'Add Property Profile',
       exact: true,
+    });
+
+    // Snapshot tab locator
+    this.snapshotTab = page.getByRole('tab', {
+      name: /^Snapshot$/i,
+      exact: true,
+    });
+
+    // Energy assessment tab locator
+    this.energyAssessmentTab = page.getByRole('tab', {
+      name: /^Energy assessment$/i,
     });
   }
 
@@ -108,5 +130,29 @@ export class ProjectDetailsPage {
         exact: true,
       })
     ).toBeVisible();
+  }
+
+  /**
+   * Switches to the Snapshot tab and verifies that the Save All button appears.
+   */
+  async openSnapshot() {
+    await this.snapshotTab.click();
+    await expect(
+      this.page.getByRole('button', { name: 'Save All' })
+    ).toBeVisible({ timeout: 15_000 });
+  }
+
+  /**
+   * Switches to a specific project tab by name.
+   *
+   * @param name Tab name ('Customer profile' | 'Property profile' | 'Snapshot' | 'Energy assessment')
+   */
+  async openTab(name: ProjectTab) {
+    const tabLocator = this.page.getByRole('tab', {
+      name: new RegExp(`^${name}$`, 'i'),
+    });
+    await expect(tabLocator).toBeVisible({ timeout: 15_000 });
+    await expect(tabLocator).toBeEnabled({ timeout: 15_000 });
+    await tabLocator.click();
   }
 }

@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { Page, Locator, expect } from '@playwright/test';
 
 /**
@@ -10,6 +12,27 @@ export class ProjectListPage {
   readonly addProjectButton: Locator;
   readonly searchInput: Locator;
   readonly myProjectsHeading: Locator;
+
+  /**
+   * Retrieves the automatically saved project ID from the current test run or environment.
+   * Checks playwright/.auth/createdProject.json first, then falls back to process.env.SNAPSHOT_PROJECT_ID.
+   *
+   * @returns Project UUID string if available, or null.
+   */
+  static getSavedProjectId(): string | null {
+    try {
+      const targetPath = path.resolve('playwright/.auth/createdProject.json');
+      if (fs.existsSync(targetPath)) {
+        const fileContent = fs.readFileSync(targetPath, 'utf8');
+        const parsed = JSON.parse(fileContent);
+        if (parsed?.id) {
+          return parsed.id;
+        }
+      }
+    } catch {}
+
+    return process.env.SNAPSHOT_PROJECT_ID || null;
+  }
 
   /**
    * Initializes locators for the project list page elements.
@@ -98,21 +121,20 @@ export class ProjectListPage {
   async openProject(projectName: string) {
     let specificLink: Locator | null = null;
 
-    // Check if a recently created project ID was saved by the login/create project flow
-    try {
-      const fsSync = await import('node:fs');
-      const pathSync = await import('node:path');
-      const targetPath = pathSync.resolve('playwright/.auth/createdProject.json');
-      if (fsSync.existsSync(targetPath)) {
-        const { id } = JSON.parse(fsSync.readFileSync(targetPath, 'utf8'));
-        if (id) {
-          const candidate = this.page.locator(`a[href*="${id}"]`);
-          if (await candidate.isVisible({ timeout: 4000 }).catch(() => false)) {
-            specificLink = candidate;
-          }
+    // Check if the parameter directly matches a project link by ID or path
+    const directCandidate = this.page.locator(`a[href*="${projectName}"]`);
+    if (await directCandidate.isVisible({ timeout: 2000 }).catch(() => false)) {
+      specificLink = directCandidate;
+    } else {
+      // Check if a recently created project ID was saved by the login/create project flow
+      const savedId = ProjectListPage.getSavedProjectId();
+      if (savedId) {
+        const candidate = this.page.locator(`a[href*="${savedId}"]`);
+        if (await candidate.isVisible({ timeout: 4000 }).catch(() => false)) {
+          specificLink = candidate;
         }
       }
-    } catch (e) {}
+    }
 
     // Fall back to matching link by name/address if specific ID link isn't found
     const projectLink =

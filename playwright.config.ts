@@ -100,5 +100,15 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
+
+    // Step 6: Snapshot tab synchronization tests (runs on the project created by the script)
+    {
+      name: 'snapshot',
+      testMatch: /snapshot\.spec\.ts/,
+      dependencies: ['energy-assessment'],
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
   ],
 });
