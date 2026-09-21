@@ -1,27 +1,34 @@
+/**
+ * Comprehensive test data used across all test suites to create and verify a project.
+ * Contains customer details, property profile fields, utilities, and fuel costs.
+ */
 export const projectData = {
+  // --- Basic Project Information ---
   firstName: 'Sterling',
   lastName: 'Beaumont',
   assessor: 'Anjali Priya',
 
-  // Project Details
+  // --- Project Address ---
   streetAddress: '29 Briarwood Lane, East Hartford, CT, USA',
   city: 'East Hartford',
   state: 'CT',
   zip: '06118',
 
+  // --- Project Configuration ---
   projectType: 'Residential',
   buildingType: 'Townhouse',
   configuration: 'EversourceUI',
   programType: 'HESIE',
 
+  // --- Applicant Information ---
   secondaryProjectNumber: 'SEC-CT-001',
 
-  // Customer Profile
+  // --- Customer Contact Information ---
   homePhone: '2035554729',
   cellPhone: '2035554728',
   applicantEmail: 'sterling.beaumont@yopmail.com',
 
-  // Utility Information
+  // --- Utility Information ---
   electricCompany: 'Eversource',
   electricMeterNumber: 'EM458721963',
   electricAccountNumber: 'EA785214963',
@@ -30,14 +37,14 @@ export const projectData = {
   gasMeterNumber: 'GM741258963',
   gasCompany: 'CNG',
 
-  // Landlord Information
+  // --- Landlord Information (used when Rent is selected) ---
   landlordFirstName: 'Marcus',
   landlordLastName: 'Whitmore',
   landlordAddress: '314 Harbor View Avenue, Stamford, CT, USA',
   landlordCity: 'Stamford',
   landlordPhone: '2035556197',
 
-  // Property Profile data
+  // --- Property Profile Details ---
   rentOrOwn: 'Rent',
   yearBuilt: '2025',
   numberofattachedsides: 2,
@@ -64,8 +71,8 @@ export const projectData = {
   expectedTotalHeatedVolume: 30876,
   expectedMVG: 1254.3,
 
-  // Energy Costs
-fuelCosts: [
+  // --- Fuel Costs Data Array ---
+  fuelCosts: [
     {
       fuelType: 'Electricity',
       costPerUnit: 0.15,

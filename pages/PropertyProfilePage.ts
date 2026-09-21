@@ -1,6 +1,11 @@
-import { Locator } from '@playwright/test';
+import { Locator, Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 
+/**
+ * Page object representing the Property Profile form under Project Details.
+ * Handles entering house dimensions, floors, basement, HVAC specifications,
+ * occupancy details, and verifying calculated engineering metrics (e.g. heated sq ft, volume, MVG).
+ */
 export class PropertyProfilePage extends BasePage {
   // Property Details Section
   readonly addPropertyProfileHeading: Locator;
@@ -48,124 +53,71 @@ export class PropertyProfilePage extends BasePage {
   // Save Button
   readonly saveButton: Locator;
 
-  constructor(page: import('@playwright/test').Page) {
+  /**
+   * Initializes locators for all fields on the Property Profile form.
+   * @param page Playwright Page instance
+   */
+  constructor(page: Page) {
     super(page);
 
+    // Main form heading
     this.addPropertyProfileHeading = page.getByRole('heading', {
       name: 'Add Property Profile',
       exact: true,
     });
 
-    this.rentOwnSelect = page.locator(
-      '#field-rent_or_own [role="combobox"]'
-    );
+    // Property Details
+    this.rentOwnSelect = page.locator('#field-rent_or_own [role="combobox"]');
+    this.buildingTypeSelect = page.locator('#field-residence_type [role="combobox"]');
+    this.houseTypeSelect = page.locator('#field-house_type [role="combobox"]');
+    this.homeOrientationSelect = page.locator('#field-home_orientation [role="combobox"]');
+    this.numberOfAttachedSidesSelect = page.locator('#field-number_of_attached_sides [role="combobox"]');
+    this.yearBuiltInput = page.locator('#field-year_built input');
 
-    this.buildingTypeSelect = page.locator(
-      '#field-residence_type [role="combobox"]'
-    );
+    // Square Footage & Height
+    this.numberOfFloorsAboveGradeSelect = page.locator('#field-number_of_floors_above_grade [role="combobox"]');
+    this.heatedAboveGradeSquareFeetInput = page.locator('#field-heated_above_grade_square_feet input');
+    this.aboveGradeCeilingHeightInput = page.locator('#field-above_grade_ceiling_height input');
 
-    this.houseTypeSelect = page.locator(
-      '#field-house_type [role="combobox"]'
-    );
+    // Basement
+    this.basementTypeSelect = page.locator('#field-basement_type [role="combobox"]');
+    this.basementSquareFeetInput = page.locator('#field-basement_square_feet input');
+    this.heatedBasementSquareFeetInput = page.locator('#field-heated_basement_square_feet input');
+    this.basementCeilingHeightInput = page.locator('#field-basement_ceiling_height input');
 
-    this.homeOrientationSelect = page.locator(
-      '#field-home_orientation [role="combobox"]'
-    );
+    // Occupancy
+    this.numberOfOccupantsInput = page.locator('#field-number_of_occupants input');
+    this.numberOfBedroomsInput = page.locator('#field-number_of_bedrooms input');
+    this.outsideTemperatureInput = page.locator('#field-outside_temperature input');
 
-    this.numberOfAttachedSidesSelect = page.locator(
-      '#field-number_of_attached_sides [role="combobox"]'
-    );
+    // Heating
+    this.heatingTypeSelect = page.locator('#field-heating_type [role="combobox"]');
+    this.primaryHeatingFuelSelect = page.locator('#field-primary_heating_fuel [role="combobox"]');
+    this.secondaryHeatingFuelSelect = page.locator('#field-secondary_heating_fuel [role="combobox"]');
 
-    this.yearBuiltInput = page.locator(
-      '#field-year_built input'
-    );
+    // Cooling
+    this.coolingTypeSelect = page.locator('#field-cooling_type [role="combobox"]');
+    this.centralAcPresentSelect = page.locator('#field-central_ac_present [role="combobox"]');
+    this.ductworkPresentSelect = page.locator('#field-ductwork_present [role="combobox"]');
 
-    this.numberOfFloorsAboveGradeSelect = page.locator(
-      '#field-number_of_floors_above_grade [role="combobox"]'
-    );
+    // DHW (Domestic Hot Water) Fuel
+    this.primaryDhwFuelSelect = page.locator('#field-primary_dhw_fuel [role="combobox"]');
 
-    this.heatedAboveGradeSquareFeetInput = page.locator(
-      '#field-heated_above_grade_square_feet input'
-    );
+    // Calculated Values (auto-computed by the application based on inputs)
+    this.totalHeatedSquareFeetInput = page.locator('#field-total_heated_square_feet input');
+    this.totalHeatedVolumeInput = page.locator('#field-total_heated_volume input');
+    this.mvgInput = page.locator('#field-minimum_ventilation_guideline input');
 
-    this.aboveGradeCeilingHeightInput = page.locator(
-      '#field-above_grade_ceiling_height input'
-    );
-
-    this.basementTypeSelect = page.locator(
-      '#field-basement_type [role="combobox"]'
-    );
-
-    this.basementSquareFeetInput = page.locator(
-      '#field-basement_square_feet input'
-    );
-
-    this.heatedBasementSquareFeetInput = page.locator(
-      '#field-heated_basement_square_feet input'
-    );
-
-    this.basementCeilingHeightInput = page.locator(
-      '#field-basement_ceiling_height input'
-    );
-
-    this.numberOfOccupantsInput = page.locator(
-      '#field-number_of_occupants input'
-    );
-
-    this.numberOfBedroomsInput = page.locator(
-      '#field-number_of_bedrooms input'
-    );
-
-    this.outsideTemperatureInput = page.locator(
-      '#field-outside_temperature input'
-    );
-
-    this.heatingTypeSelect = page.locator(
-      '#field-heating_type [role="combobox"]'
-    );
-
-    this.primaryHeatingFuelSelect = page.locator(
-      '#field-primary_heating_fuel [role="combobox"]'
-    );
-
-    this.secondaryHeatingFuelSelect = page.locator(
-      '#field-secondary_heating_fuel [role="combobox"]'
-    );
-
-    this.coolingTypeSelect = page.locator(
-      '#field-cooling_type [role="combobox"]'
-    );
-
-    this.centralAcPresentSelect = page.locator(
-      '#field-central_ac_present [role="combobox"]'
-    );
-
-    this.ductworkPresentSelect = page.locator(
-      '#field-ductwork_present [role="combobox"]'
-    );
-
-    this.primaryDhwFuelSelect = page.locator(
-      '#field-primary_dhw_fuel [role="combobox"]'
-    );
-
-    this.totalHeatedSquareFeetInput = page.locator(
-      '#field-total_heated_square_feet input'
-    );
-
-    this.totalHeatedVolumeInput = page.locator(
-      '#field-total_heated_volume input'
-    );
-
-    this.mvgInput = page.locator(
-      '#field-minimum_ventilation_guideline input'
-    );
-
+    // Save Button
     this.saveButton = page.getByRole('button', {
       name: 'Save',
       exact: true,
     });
   }
 
+  /**
+   * Waits for the Property Profile form to finish rendering.
+   */
   async waitForPageReady() {
     await this.addPropertyProfileHeading.waitFor({
       state: 'visible',
@@ -176,206 +128,155 @@ export class PropertyProfilePage extends BasePage {
     });
   }
 
-  // Property Details
+  // ---------- Property Details ----------
 
+  /** Selects 'Rent' or 'Own' from the dropdown */
   async selectRentOrOwn(value: string) {
-    await this.selectDropdown(
-      this.rentOwnSelect,
-      value
-    );
+    await this.selectDropdown(this.rentOwnSelect, value);
   }
 
+  /** Selects residence / building type (e.g. 'Townhouse') */
   async selectBuildingType(value: string) {
-    await this.selectDropdown(
-      this.buildingTypeSelect,
-      value
-    );
+    await this.selectDropdown(this.buildingTypeSelect, value);
   }
 
+  /** Selects house architectural type (e.g. 'Ranch') */
   async selectHouseType(value: string) {
-    await this.selectDropdown(
-      this.houseTypeSelect,
-      value
-    );
+    await this.selectDropdown(this.houseTypeSelect, value);
   }
 
+  /** Selects orientation of the home (e.g. 'East') */
   async selectHomeOrientation(value: string) {
-    await this.selectDropdown(
-      this.homeOrientationSelect,
-      value
-    );
+    await this.selectDropdown(this.homeOrientationSelect, value);
   }
 
+  /** Selects the number of attached sides */
   async selectNumberOfAttachedSides(value: number) {
-    await this.selectDropdown(
-      this.numberOfAttachedSidesSelect,
-      value
-    );
+    await this.selectDropdown(this.numberOfAttachedSidesSelect, value);
   }
 
+  /** Enters the year the home was built */
   async fillYearBuilt(value: string) {
-    await this.fillInput(
-      this.yearBuiltInput,
-      value
-    );
+    await this.fillInput(this.yearBuiltInput, value);
   }
 
-  // Square Footage & Height
+  // ---------- Square Footage & Height ----------
 
+  /** Selects the number of floors above grade */
   async selectNumberOfFloorsAboveGrade(value: number) {
-    await this.selectDropdown(
-      this.numberOfFloorsAboveGradeSelect,
-      value
-    );
+    await this.selectDropdown(this.numberOfFloorsAboveGradeSelect, value);
   }
 
+  /** Enters heated above-grade square feet */
   async fillHeatedAboveGradeSquareFeet(value: number) {
-    await this.fillInput(
-      this.heatedAboveGradeSquareFeetInput,
-      value
-    );
+    await this.fillInput(this.heatedAboveGradeSquareFeetInput, value);
   }
 
+  /** Enters above-grade ceiling height in feet */
   async fillAboveGradeCeilingHeight(value: number) {
-    await this.fillInput(
-      this.aboveGradeCeilingHeightInput,
-      value
-    );
+    await this.fillInput(this.aboveGradeCeilingHeightInput, value);
   }
 
-  // Basement
+  // ---------- Basement ----------
 
+  /** Selects basement type (e.g. 'Partial Heat') */
   async selectBasementType(value: string) {
-    await this.selectDropdown(
-      this.basementTypeSelect,
-      value
-    );
+    await this.selectDropdown(this.basementTypeSelect, value);
   }
 
+  /** Enters total basement square feet */
   async fillBasementSquareFeet(value: number) {
-    await this.fillInput(
-      this.basementSquareFeetInput,
-      value
-    );
+    await this.fillInput(this.basementSquareFeetInput, value);
   }
 
+  /** Enters heated basement square feet */
   async fillHeatedBasementSquareFeet(value: number) {
-    await this.fillInput(
-      this.heatedBasementSquareFeetInput,
-      value
-    );
+    await this.fillInput(this.heatedBasementSquareFeetInput, value);
   }
 
+  /** Enters basement ceiling height in feet */
   async fillBasementCeilingHeight(value: number) {
-    await this.fillInput(
-      this.basementCeilingHeightInput,
-      value
-    );
+    await this.fillInput(this.basementCeilingHeightInput, value);
   }
 
-  // Occupancy
+  // ---------- Occupancy ----------
 
+  /** Enters number of home occupants */
   async fillNumberOfOccupants(value: number) {
-    await this.fillInput(
-      this.numberOfOccupantsInput,
-      value
-    );
+    await this.fillInput(this.numberOfOccupantsInput, value);
   }
 
+  /** Enters number of bedrooms */
   async fillNumberOfBedrooms(value: number) {
-    await this.fillInput(
-      this.numberOfBedroomsInput,
-      value
-    );
+    await this.fillInput(this.numberOfBedroomsInput, value);
   }
 
+  /** Enters outside temperature at the time of assessment */
   async fillOutsideTemperature(value: number) {
-    await this.fillInput(
-      this.outsideTemperatureInput,
-      value
-    );
+    await this.fillInput(this.outsideTemperatureInput, value);
   }
 
-  // Heating
+  // ---------- Heating ----------
 
+  /** Selects heating system type (e.g. 'Geothermal') */
   async selectHeatingType(value: string) {
-    await this.selectDropdown(
-      this.heatingTypeSelect,
-      value
-    );
+    await this.selectDropdown(this.heatingTypeSelect, value);
   }
 
+  /** Selects primary heating fuel source (e.g. 'Natural Gas') */
   async selectPrimaryHeatingFuel(value: string) {
-    await this.selectDropdown(
-      this.primaryHeatingFuelSelect,
-      value
-    );
+    await this.selectDropdown(this.primaryHeatingFuelSelect, value);
   }
 
+  /** Selects secondary heating fuel source (e.g. 'Propane') */
   async selectSecondaryHeatingFuel(value: string) {
-    await this.selectDropdown(
-      this.secondaryHeatingFuelSelect,
-      value
-    );
+    await this.selectDropdown(this.secondaryHeatingFuelSelect, value);
   }
 
-  // Cooling
+  // ---------- Cooling ----------
 
+  /** Selects cooling system type (e.g. 'Central AC') */
   async selectCoolingType(value: string) {
-    await this.selectDropdown(
-      this.coolingTypeSelect,
-      value
-    );
+    await this.selectDropdown(this.coolingTypeSelect, value);
   }
 
+  /** Selects whether central AC is present ('Yes' or 'No') */
   async selectCentralAcPresent(value: string) {
-    await this.selectDropdown(
-      this.centralAcPresentSelect,
-      value
-    );
+    await this.selectDropdown(this.centralAcPresentSelect, value);
   }
 
+  /** Selects ductwork configuration (e.g. 'Cooling') */
   async selectDuctworkPresent(value: string) {
-    await this.selectDropdown(
-      this.ductworkPresentSelect,
-      value
-    );
+    await this.selectDropdown(this.ductworkPresentSelect, value);
   }
 
-  // DHW Fuel
+  // ---------- Domestic Hot Water (DHW) Fuel ----------
 
+  /** Selects primary fuel used for domestic hot water */
   async selectPrimaryDhwFuel(value: string) {
-    await this.selectDropdown(
-      this.primaryDhwFuelSelect,
-      value
-    );
+    await this.selectDropdown(this.primaryDhwFuelSelect, value);
   }
 
-  // Calculated Values
+  // ---------- Calculated Values ----------
 
+  /** Verifies total heated square feet calculated by the system */
   async verifyTotalHeatedSquareFeet(expectedValue: number) {
-    await this.verifyInputValue(
-      this.totalHeatedSquareFeetInput,
-      expectedValue
-    );
+    await this.verifyInputValue(this.totalHeatedSquareFeetInput, expectedValue);
   }
 
+  /** Verifies total heated volume calculated by the system */
   async verifyTotalHeatedVolume(expectedValue: number) {
-    await this.verifyInputValue(
-      this.totalHeatedVolumeInput,
-      expectedValue
-    );
+    await this.verifyInputValue(this.totalHeatedVolumeInput, expectedValue);
   }
 
+  /** Verifies Minimum Ventilation Guideline (MVG) calculated value */
   async verifyMVG(expectedValue: number) {
-    await this.verifyInputValue(
-      this.mvgInput,
-      expectedValue
-    );
+    await this.verifyInputValue(this.mvgInput, expectedValue);
   }
 
-  // Save
+  // ---------- Save ----------
 
+  /** Clicks the Save button to persist the property profile */
   async clickSave() {
     await this.clickButton(this.saveButton);
   }

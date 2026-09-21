@@ -1,3 +1,7 @@
+/**
+ * Centralized barrel export file for all page objects and component objects.
+ * Allows test suites to import pages concisely from '../pages'.
+ */
 export { BasePage } from './BasePage';
 export { LoginPage } from './LoginPage';
 export { ProjectListPage } from './ProjectListPage';
@@ -6,7 +10,9 @@ export { ProjectDetailsPage } from './ProjectDetailsPage';
 export { CustomerProfilePage } from './CustomerProfilePage';
 export { PropertyProfilePage } from './PropertyProfilePage';
 export { EnergyCostsPage } from './EnergyCostsPage';
-export { EnergyAssessmentPage } from './EnergyAssessmentPage';
-export { AssessmentTaskPage } from './AssessmentTaskPage';
-export { AppliancesAssessmentPage } from './AppliancesAssessmentPage';
+export {
+  EnergyAssessmentPage,
+  AppliancesAssessmentPage,
+  AssessmentTaskPage,
+} from './EnergyAssessmentPage';
 export { Header } from './Header';

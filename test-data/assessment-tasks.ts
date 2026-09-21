@@ -1,16 +1,30 @@
+/**
+ * Defines the supported UI input control types across assessment task forms.
+ */
 export type FieldKind = 'text' | 'textarea' | 'select' | 'checkbox';
 
+/**
+ * Specification for an individual field inside an appliance section.
+ */
 export interface FieldSpec {
+  /** The visible label or placeholder of the form field */
   label: string;
+
+  /** The type of input element (text input, multiline textarea, select dropdown, or checkbox) */
   kind: FieldKind;
+
   /**
-   * text / textarea : the text to type
-   * select          : option text to pick (omit to pick the first option)
-   * checkbox        : true = check, false = uncheck (default true)
+   * The test value to input:
+   * - text / textarea : string value to type
+   * - select          : exact option text to pick (if omitted, the first option is chosen)
+   * - checkbox        : true to check, false to uncheck
    */
   value?: string | boolean;
 }
 
+/**
+ * All six appliance section tab names available inside the Appliances task.
+ */
 export const APPLIANCE_SECTIONS = [
   'Refrigerator',
   'Advanced Power Strip',
@@ -20,11 +34,14 @@ export const APPLIANCE_SECTIONS = [
   'Dehumidifier',
 ] as const;
 
+/**
+ * Type representing any valid appliance section name.
+ */
 export type ApplianceSection = (typeof APPLIANCE_SECTIONS)[number];
 
 /**
- * Fields on each tab, taken from the screenshots (image uploads left out on
- * purpose). Note Refrigerator says "Unit Age" while the other tabs say "Age".
+ * Mapping of each appliance section tab to its list of fields and test values.
+ * Note: Refrigerator uses "Unit Age" as its label, whereas other tabs use "Age".
  */
 export const APPLIANCE_FIELDS: Record<ApplianceSection, FieldSpec[]> = {
   Refrigerator: [
@@ -79,7 +96,13 @@ export const APPLIANCE_FIELDS: Record<ApplianceSection, FieldSpec[]> = {
   ],
 };
 
+/**
+ * High-level task metadata used to verify progress indicators on the Kanban board.
+ */
 export const ASSESSMENT_TASKS = {
+  /** Air Sealing has a single section (0 / 1 sections) */
   airSealing: { name: 'Air Sealing', totalSections: 1 },
+
+  /** Appliances has six section tabs (0 / 6 sections) */
   appliances: { name: 'Appliances', totalSections: APPLIANCE_SECTIONS.length },
 } as const;
