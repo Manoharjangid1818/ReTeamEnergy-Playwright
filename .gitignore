@@ -1,9 +1,44 @@
-
-# Playwright
+# Dependencies
 node_modules/
+.pnpm-store/
+
+# Environment variables & secrets
 .env
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/playwright/.auth/
+.env.*
+!.env.example
+
+# Playwright test outputs, reports, and traces
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright/.auth/
+trace.zip
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# TypeScript build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Operating system files
+.DS_Store
+.DS_Store?
+._*
+[Tt]humbs.db
+[Ee]hthumbs.db
+[Dd]esktop.ini
+
+# IDE & Editor files
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
