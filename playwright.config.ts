@@ -101,11 +101,21 @@ export default defineConfig({
       },
     },
 
-    // Step 6: Snapshot tab synchronization tests (runs on the project created by the script)
+    // Step 6: Required Measures (completes prerequisite measures for Snapshot validation)
+    {
+      name: 'required-measures',
+      testMatch: /requiredMeasures\.spec\.ts/,
+      dependencies: ['energy-assessment'],
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+
+    // Step 7: Snapshot tab synchronization tests (runs on the project created by the script)
     {
       name: 'snapshot',
       testMatch: /snapshot\.spec\.ts/,
-      dependencies: ['energy-assessment'],
+      dependencies: ['required-measures'],
       use: {
         ...devices['Desktop Chrome'],
       },

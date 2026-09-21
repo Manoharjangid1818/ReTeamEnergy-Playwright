@@ -34,14 +34,11 @@ test.describe.serial('Energy Assessment - Air Sealing and Appliances tasks', () 
       await page.goto('/');
       await expect(page).toHaveURL('https://dev.reteamenergy.com/');
 
-      // Step 2: Search and open target project by automatically captured ID or customer name
-      const savedProjectId = ProjectListPage.getSavedProjectId();
+      // Step 2: Search and open target project by project name
       await projectListPage.searchProject(
-        savedProjectId || `${projectData.firstName} ${projectData.lastName}`
+        `${projectData.firstName} ${projectData.lastName}`
       );
-      await projectListPage.openProject(
-        savedProjectId || projectData.streetAddress
-      );
+      await projectListPage.openProject(projectData.streetAddress);
 
       // Step 3: Open the Energy Assessment Kanban board
       await energyAssessmentPage.open();
@@ -145,14 +142,11 @@ test.describe.serial('Energy Assessment - Air Sealing and Appliances tasks', () 
       await page.goto('/');
       await expect(page).toHaveURL('https://dev.reteamenergy.com/');
 
-      // Step 2: Search and open target project by automatically captured ID or customer name
-      const savedProjectId = ProjectListPage.getSavedProjectId();
+      // Step 2: Search and open target project by project name
       await projectListPage.searchProject(
-        savedProjectId || `${projectData.firstName} ${projectData.lastName}`
+        `${projectData.firstName} ${projectData.lastName}`
       );
-      await projectListPage.openProject(
-        savedProjectId || projectData.streetAddress
-      );
+      await projectListPage.openProject(projectData.streetAddress);
 
       // Step 3: Open Energy Assessment board and locate Appliances card
       await board.open();

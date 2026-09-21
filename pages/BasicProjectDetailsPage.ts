@@ -72,6 +72,8 @@ export class BasicProjectDetailsPage {
     await this.page.goto(urls.manageProject);
   }
 
+  private createdProjectName: string = '';
+
   /**
    * Fills the applicant's first and last name fields.
    *
@@ -90,6 +92,7 @@ export class BasicProjectDetailsPage {
     configuration: string;
     programType: string;
   }) {
+    this.createdProjectName = `${data.firstName} ${data.lastName}`.trim();
     await this.firstName.fill(data.firstName);
     await this.lastName.fill(data.lastName);
   }
@@ -243,16 +246,17 @@ export class BasicProjectDetailsPage {
     // Step 3: Verify URL redirects to project-details
     await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
 
-    // Step 4: Extract project ID from URL and persist for downstream tests & .env
+    // Step 4: Extract project ID from URL and persist for downstream tests
     const match = this.page.url().match(/\/project-details\/([a-zA-Z0-9-]+)/);
     if (match) {
       const projectId = match[1];
-      console.log(`[Project Created] Automatically captured project ID: ${projectId}`);
+      const projectName = this.createdProjectName || 'Sterling Beaumont';
+      console.log(`[Project Created] Automatically captured project ID: ${projectId}, name: ${projectName}`);
       try {
         const fsSync = await import('node:fs');
         const pathSync = await import('node:path');
 
-        // 1. Ensure auth folder exists and save createdProject.json
+        // Ensure auth folder exists and save createdProject.json with id and name
         const authDir = pathSync.resolve('playwright/.auth');
         if (!fsSync.existsSync(authDir)) {
           fsSync.mkdirSync(authDir, { recursive: true });
@@ -260,29 +264,15 @@ export class BasicProjectDetailsPage {
         const targetPath = pathSync.resolve(authDir, 'createdProject.json');
         fsSync.writeFileSync(
           targetPath,
-          JSON.stringify({ id: projectId, createdAt: new Date().toISOString() }, null, 2),
+          JSON.stringify(
+            { id: projectId, name: projectName, createdAt: new Date().toISOString() },
+            null,
+            2
+          ),
           'utf8'
         );
-
-        // 2. Automatically update .env file so SNAPSHOT_PROJECT_ID is populated
-        const envPath = pathSync.resolve('.env');
-        if (fsSync.existsSync(envPath)) {
-          let envContent = fsSync.readFileSync(envPath, 'utf8');
-          if (/SNAPSHOT_PROJECT_ID=.*(\r?\n|$)/.test(envContent)) {
-            envContent = envContent.replace(
-              /SNAPSHOT_PROJECT_ID=.*(\r?\n|$)/,
-              `SNAPSHOT_PROJECT_ID=${projectId}$1`
-            );
-          } else {
-            envContent = envContent.trimEnd() + `\nSNAPSHOT_PROJECT_ID=${projectId}\n`;
-          }
-          fsSync.writeFileSync(envPath, envContent, 'utf8');
-        }
-
-        // 3. Set runtime environment variable for current process
-        process.env.SNAPSHOT_PROJECT_ID = projectId;
       } catch (e) {
-        console.warn('[Project Created] Warning: Could not persist project ID:', e);
+        console.warn('[Project Created] Warning: Could not persist project ID and name:', e);
       }
     }
   }

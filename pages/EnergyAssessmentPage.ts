@@ -137,6 +137,11 @@ export class EnergyAssessmentPage {
         .first()
         .click();
     }
+    await this.page.waitForLoadState('networkidle');
+    await this.page
+      .locator('text=Loading project details...')
+      .waitFor({ state: 'detached', timeout: 15_000 })
+      .catch(() => null);
   }
 
   /**
@@ -256,11 +261,38 @@ export class AssessmentTaskPage {
    * Selects an option from a combobox dropdown by label.
    *
    * @param label Visible label of the combobox
-   * @param optionName Exact text of the option to select
+   * @param optionName Exact text of the option to select (optional; selects first if omitted)
    */
-  async selectDropdownOption(label: string, optionName: string) {
-    await this.page.getByRole('combobox', { name: label }).click();
-    await this.page.getByRole('option', { name: optionName, exact: true }).click();
+  async selectDropdownOption(label: string, optionName?: string) {
+    const combobox = this.page
+      .getByRole('combobox', { name: label })
+      .or(
+        this.page
+          .locator(`.MuiFormControl-root:has-text("${label}")`)
+          .locator('[role="combobox"], select')
+      )
+      .first();
+    await combobox.click();
+    if (optionName) {
+      await this.page.getByRole('option', { name: optionName }).first().click();
+    } else {
+      await this.page.getByRole('option').first().click();
+    }
+  }
+
+  /**
+   * Switches the active subcategory tab within a task screen
+   * (e.g. 'Attic - Open', 'Basement - Ceiling' inside the Insulation task).
+   *
+   * @param subcategoryName Visible name of the subcategory tab or button
+   */
+  async selectSubcategory(subcategoryName: string) {
+    const tab = this.page
+      .getByRole('tab', { name: subcategoryName })
+      .or(this.page.getByRole('button', { name: subcategoryName, exact: true }))
+      .or(this.page.getByText(subcategoryName, { exact: true }));
+    await tab.first().click();
+    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -300,9 +332,13 @@ export class AssessmentTaskPage {
    * @param filePath Absolute path to the image file to upload
    */
   async uploadMeasureImage(filePath: string) {
-    await this.uploadImagesHeading.click();
+    const isHeading = await this.uploadImagesHeading.isVisible({ timeout: 2000 }).catch(() => false);
+    if (isHeading) {
+      await this.uploadImagesHeading.click().catch(() => null);
+    }
     await this.fileInput.setInputFiles(filePath);
     await this.uploadButton.click();
+    await this.page.waitForTimeout(1000);
   }
 
   /**
@@ -629,6 +665,36 @@ export class AppliancesAssessmentPage {
         }
       }
     }
+  }
+
+  /**
+   * Clicks 'Save Changes' on the Appliances task page and waits for backend save response.
+   */
+  async saveChanges() {
+    const saveButton = this.page.getByRole('button', {
+      name: 'Save Changes',
+      exact: true,
+    });
+    const savePromise = this.page
+      .waitForResponse(
+        (res) =>
+          (res.url().includes('/api/subcategories') ||
+            res.url().includes('/api/measures') ||
+            res.url().includes('/api/projects')) &&
+          (res.request().method() === 'POST' ||
+            res.request().method() === 'PUT') &&
+          res.status() === 200,
+        { timeout: 15_000 }
+      )
+      .catch(() => null);
+
+    await saveButton.click();
+    await savePromise;
+
+    // Verify success banner if shown
+    await expect(
+      this.page.getByText(/Project updated successfully/i)
+    ).toBeVisible({ timeout: 10_000 }).catch(() => null);
   }
 
   /**

@@ -26,15 +26,14 @@ test('Property Profile → Add Property Profile', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveURL('https://dev.reteamenergy.com/');
 
-  // Step 2: Search for the target project by automatically captured ID or customer name
-  const savedProjectId = ProjectListPage.getSavedProjectId();
+  // Step 2: Search for the target project by project name
   await projectListPage.searchProject(
-    savedProjectId || `${projectData.firstName} ${projectData.lastName}`
+    `${projectData.firstName} ${projectData.lastName}`
   );
 
   // Step 3: Open the matching project
   await projectListPage.openProject(
-    savedProjectId || projectData.streetAddress
+    projectData.streetAddress
   );
 
   // Step 4: Wait for Project Details page to be ready

@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Page, Locator, expect } from '@playwright/test';
+import { projectData } from '../test-data/projectData';
 
 /**
  * Page object representing the project dashboard screen (/ or /projects).
@@ -14,8 +15,8 @@ export class ProjectListPage {
   readonly myProjectsHeading: Locator;
 
   /**
-   * Retrieves the automatically saved project ID from the current test run or environment.
-   * Checks playwright/.auth/createdProject.json first, then falls back to process.env.SNAPSHOT_PROJECT_ID.
+   * Retrieves the automatically saved project ID from the initial login/create project flow.
+   * Checks playwright/.auth/createdProject.json.
    *
    * @returns Project UUID string if available, or null.
    */
@@ -31,7 +32,29 @@ export class ProjectListPage {
       }
     } catch {}
 
-    return process.env.SNAPSHOT_PROJECT_ID || null;
+    return null;
+  }
+
+  /**
+   * Retrieves the project name automatically captured from the project creation process.
+   * Checks playwright/.auth/createdProject.json first, then process.env.SNAPSHOT_PROJECT_NAME,
+   * then falls back to projectData.
+   *
+   * @returns The project name string
+   */
+  static getSavedProjectName(): string {
+    try {
+      const targetPath = path.resolve('playwright/.auth/createdProject.json');
+      if (fs.existsSync(targetPath)) {
+        const fileContent = fs.readFileSync(targetPath, 'utf8');
+        const parsed = JSON.parse(fileContent);
+        if (parsed?.name) {
+          return parsed.name;
+        }
+      }
+    } catch {}
+
+    return `${projectData.firstName} ${projectData.lastName}`;
   }
 
   /**
@@ -112,21 +135,49 @@ export class ProjectListPage {
   }
 
   /**
-   * Locates and clicks on the target project card from the list.
-   * If a project was recently created in this test run, it prefers matching by exact project ID;
-   * otherwise it falls back to filtering cards by project name or address.
+   * Counts the number of visible project cards on the dashboard matching the given name or text.
    *
-   * @param projectName Project identifier such as street address or customer name
+   * @param name Project name or search keyword
+   * @returns Number of matching project card links found
+   */
+  async countProjectsByName(name: string): Promise<number> {
+    const matchingCards = this.page
+      .getByRole('link')
+      .filter({ hasText: name });
+    return await matchingCards.count();
+  }
+
+  /**
+   * Locates and clicks on the target project card from the list.
+   * Prioritizes matching by card text (name or address); falls back to recently created project ID.
+   *
+   * @param projectName Project identifier such as customer name or street address
    */
   async openProject(projectName: string) {
     let specificLink: Locator | null = null;
 
-    // Check if the parameter directly matches a project link by ID or path
-    const directCandidate = this.page.locator(`a[href*="${projectName}"]`);
-    if (await directCandidate.isVisible({ timeout: 2000 }).catch(() => false)) {
-      specificLink = directCandidate;
-    } else {
-      // Check if a recently created project ID was saved by the login/create project flow
+    // 1. Check if the parameter directly matches a project link by ID or path
+    if (projectName.startsWith('/') || /^[0-9a-f-]{36}$/i.test(projectName)) {
+      const directCandidate = this.page.locator(`a[href*="${projectName}"]`);
+      if (await directCandidate.isVisible({ timeout: 2000 }).catch(() => false)) {
+        specificLink = directCandidate;
+      }
+    }
+
+    // 2. Direct match by visible name or address text on the project card
+    if (!specificLink) {
+      const nameMatch = this.page
+        .getByRole('link')
+        .filter({ hasText: projectName })
+        .first();
+
+      if (await nameMatch.isVisible({ timeout: 2000 }).catch(() => false)) {
+        specificLink = nameMatch;
+      }
+    }
+
+    // 3. Fall back to recently created project ID if present
+    if (!specificLink) {
       const savedId = ProjectListPage.getSavedProjectId();
       if (savedId) {
         const candidate = this.page.locator(`a[href*="${savedId}"]`);

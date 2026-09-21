@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { expect, test } from '@playwright/test';
 import {
   AppliancesAssessmentPage,
@@ -7,7 +9,8 @@ import {
   SnapshotPage,
 } from '../pages';
 import { snapshotEdits } from '../test-data/snapshotData';
-import { projectData } from '../test-data/projectData';
+
+const projectFile = path.resolve('playwright/.auth/createdProject.json');
 
 /**
  * Snapshot tab synchronization test suite.
@@ -16,11 +19,35 @@ import { projectData } from '../test-data/projectData';
  * 2. Property Profile edits sync to the Property profile tab.
  * 3. Appliances edits sync to the Energy assessment -> Appliances task screen.
  *
- * Automatically runs against the project created by the script (or overridden by SNAPSHOT_PROJECT_ID).
+ * Runs only as the final step of the chain using the project created by login.spec.ts.
  */
-test.describe.serial('Snapshot tab syncs to the source tabs', () => {
+test.describe('Snapshot tab syncs to the source tabs', () => {
+  // Use mode: 'default' so individual test failures do not abort subsequent tests
+  test.describe.configure({ mode: 'default' });
+
+  let projectName: string;
   let projectDetailsPage: ProjectDetailsPage;
   let snapshot: SnapshotPage;
+
+  test.beforeAll(() => {
+    if (!fs.existsSync(projectFile)) {
+      throw new Error(
+        "Snapshot needs the project created by login.spec.ts. Run the full chain with `npx playwright test` (don't run tests/snapshot.spec.ts alone or with --no-deps)."
+      );
+    }
+
+    try {
+      const data = JSON.parse(fs.readFileSync(projectFile, 'utf8'));
+      if (!data?.id || !data?.name) {
+        throw new Error();
+      }
+      projectName = data.name;
+    } catch {
+      throw new Error(
+        "Snapshot needs the project created by login.spec.ts. Run the full chain with `npx playwright test` (don't run tests/snapshot.spec.ts alone or with --no-deps)."
+      );
+    }
+  });
 
   // Before each test: navigate to the project, wait for details, and open Snapshot tab
   test.beforeEach(async ({ page }) => {
@@ -28,21 +55,17 @@ test.describe.serial('Snapshot tab syncs to the source tabs', () => {
     projectDetailsPage = new ProjectDetailsPage(page);
     snapshot = new SnapshotPage(page);
 
-    // Automatically resolve the project ID created by the test script, or fall back to projectData
-    const savedProjectId = ProjectListPage.getSavedProjectId();
-    const searchQuery = savedProjectId || `${projectData.firstName} ${projectData.lastName}`;
-    const openTarget = savedProjectId || projectData.streetAddress;
-
     // Step 1: Navigate to home page
     await page.goto('/');
     await expect(page).toHaveURL('https://dev.reteamenergy.com/');
 
-    // Step 2: Search for the project (using automatically captured ID or customer name)
-    await projectListPage.searchProject(searchQuery);
+    // Step 2: Search for the project by name
+    await projectListPage.searchProject(projectName);
 
-    // Step 3: Open the matching project
-    await projectListPage.openProject(openTarget);
+    // Step 3: Open the matching project from search results
+    await projectListPage.openProject(projectName);
     await projectDetailsPage.waitForPageReady();
+    await expect(page).toHaveURL(/project-details/);
 
     // Step 4: Switch to the Snapshot tab
     await projectDetailsPage.openSnapshot();
@@ -50,6 +73,7 @@ test.describe.serial('Snapshot tab syncs to the source tabs', () => {
 
   /**
    * Tests editing customer information on Snapshot and verifying on the Customer profile tab.
+   * Note: No First Name or Last Name edits are performed to preserve project searchability.
    */
   test('Customer Information -> Customer profile tab', async ({ page }) => {
     // Step 1: Expand Customer Information accordion

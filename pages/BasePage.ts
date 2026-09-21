@@ -62,6 +62,7 @@ export class BasePage {
     value: string | number
   ) {
     await input.fill(String(value));
+    await input.blur().catch(() => null);
   }
 
   /**

@@ -153,25 +153,13 @@ export class SnapshotPage extends BasePage {
 
   /**
    * Clicks 'Save All' and races two outcomes:
-   * (a) A successful backend response (POST, PUT, or PATCH with 2xx status)
+   * (a) A successful backend response (POST, PUT, or PATCH with 2xx status) where saving completes
    * (b) The "Please fix the following before saving" validation alert
    *
    * In case (b), extracts all listed errors and throws an Error containing the full list.
    */
   async saveAll() {
     await expect(this.saveAllButton).toBeEnabled();
-
-    // Prepare response listener
-    const responsePromise = this.page
-      .waitForResponse(
-        (res) =>
-          ['POST', 'PUT', 'PATCH'].includes(res.request().method()) &&
-          res.ok() &&
-          !res.url().includes('/api/auth'),
-        { timeout: 20_000 },
-      )
-      .then(() => ({ type: 'response' as const }))
-      .catch(() => null);
 
     // Prepare validation alert listener
     const alertHeading = this.page.getByText(
@@ -181,6 +169,31 @@ export class SnapshotPage extends BasePage {
       .waitFor({ state: 'visible', timeout: 20_000 })
       .then(() => ({ type: 'alert' as const }))
       .catch(() => null);
+
+    // Prepare response listener: ensures write response arrives and all saves settle
+    const responsePromise = (async () => {
+      await this.page.waitForResponse(
+        (res) =>
+          ['POST', 'PUT', 'PATCH'].includes(res.request().method()) &&
+          res.ok() &&
+          !res.url().includes('/api/auth'),
+        { timeout: 20_000 },
+      );
+
+      // Wait for "Saving…" button state to detach and success toast to appear
+      await this.page
+        .getByRole('button', { name: 'Saving…' })
+        .waitFor({ state: 'detached', timeout: 20_000 })
+        .catch(() => null);
+      await this.page
+        .getByText(/Saved successfully/i)
+        .first()
+        .waitFor({ state: 'visible', timeout: 20_000 })
+        .catch(() => null);
+      await this.page.waitForLoadState('networkidle').catch(() => null);
+
+      return { type: 'response' as const };
+    })().catch(() => null);
 
     // Click Save All
     await this.clickButton(this.saveAllButton);
@@ -208,7 +221,7 @@ export class SnapshotPage extends BasePage {
           : 'Validation failed with unknown errors';
 
       throw new Error(
-        `Snapshot save failed with validation errors:\n  - ${errorMessage}`
+        `Save All blocked by validation:\n  - ${errorMessage}`
       );
     }
 
@@ -223,7 +236,7 @@ export class SnapshotPage extends BasePage {
         .allInnerTexts()
         .catch(() => []);
       throw new Error(
-        `Snapshot save failed with validation errors:\n  - ${errorItems.join('\n  - ')}`
+        `Save All blocked by validation:\n  - ${errorItems.join('\n  - ')}`
       );
     }
 

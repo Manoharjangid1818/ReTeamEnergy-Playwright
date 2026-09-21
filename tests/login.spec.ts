@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { test, expect } from '@playwright/test';
 
 import {
@@ -15,6 +17,12 @@ import { projectData } from '../test-data/projectData';
  * 4. Submits the form and verifies navigation to the Project Details page.
  */
 test('Login → Add Project → Logout', async ({ page }) => {
+  // Stale-project protection: delete existing createdProject.json before creating new project
+  const createdProjectFile = path.resolve('playwright/.auth/createdProject.json');
+  if (fs.existsSync(createdProjectFile)) {
+    fs.rmSync(createdProjectFile, { force: true });
+  }
+
   // Initialize page objects
   const projectListPage = new ProjectListPage(page);
   const basicProjectDetailsPage = new BasicProjectDetailsPage(page);

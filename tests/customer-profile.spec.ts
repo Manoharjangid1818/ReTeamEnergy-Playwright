@@ -28,15 +28,14 @@ test('Customer Profile → Add Customer Profile', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveURL('https://dev.reteamenergy.com/');
 
-  // Step 2: Search for the test project by automatically captured ID or customer name
-  const savedProjectId = ProjectListPage.getSavedProjectId();
+  // Step 2: Search for the test project by project name
   await projectListPage.searchProject(
-    savedProjectId || `${projectData.firstName} ${projectData.lastName}`
+    `${projectData.firstName} ${projectData.lastName}`
   );
 
   // Step 3: Open the matching project from the search results
   await projectListPage.openProject(
-    savedProjectId || projectData.streetAddress
+    projectData.streetAddress
   );
 
   // Step 4: Wait for Project Details screen to load
