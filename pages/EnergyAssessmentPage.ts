@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { expect, Locator, Page } from '@playwright/test';
 import {
   APPLIANCE_FIELDS,
@@ -5,6 +6,21 @@ import {
   ApplianceSection,
   FieldSpec,
 } from '../test-data/assessment-tasks';
+import {
+  InsulationSectionSpec,
+  insulationFields,
+} from '../test-data/energyAssessmentData';
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function labelPattern(label: string): RegExp {
+  return new RegExp(`^\\s*${escapeRegExp(label)}\\s*\\*?\\s*$`);
+}
+
+/** test-data/fixtures/measure.png, used for every Measure Images upload below. */
+const MEASURE_IMAGE_FIXTURE = path.resolve(__dirname, '../test-data/fixtures/measure.png');
 
 /**
  * Status columns available on the Energy Assessment Kanban board.
@@ -55,6 +71,10 @@ export class EnergyAssessmentPage {
    * Checks if the tab is already selected before clicking to avoid redundant navigation.
    */
   async open() {
+    if (this.page.url().includes('/task/')) {
+      await this.goBackToProjectDetails();
+    }
+
     await expect(this.energyAssessmentTab).toBeVisible({ timeout: 20_000 });
     await expect(this.energyAssessmentTab).toBeEnabled({ timeout: 20_000 });
 
@@ -774,6 +794,460 @@ export class AppliancesAssessmentPage {
       return;
     }
     await this.goBackToProjectDetailsLink.click().catch(() => null);
+    await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
+  }
+}
+
+/**
+ * A single-instance task screen with a bottom "Save Changes" button and,
+ * optionally, one field whose value reveals extra fields (e.g. Domestic Hot
+ * Water's "Upgrade Recommended" -> Yes). Covers Domestic Hot Water,
+ * Safety Information & Air Flow, and Water Package.
+ */
+export class GenericTaskFormPage {
+  readonly saveChangesButton: Locator;
+  readonly goBackToProjectDetailsLink: Locator;
+
+  constructor(private readonly page: Page) {
+    this.saveChangesButton = page.getByRole('button', { name: 'Save Changes' });
+    this.goBackToProjectDetailsLink = page.getByRole('link', {
+      name: 'Go Back to Project Details',
+    });
+  }
+
+  async expectLoaded(taskUrlPart: RegExp) {
+    await expect(this.page).toHaveURL(taskUrlPart, { timeout: 15_000 });
+    await this.page
+      .locator('text=Loading project details...')
+      .waitFor({ state: 'detached', timeout: 15_000 })
+      .catch(() => null);
+  }
+
+  textbox(label: string): Locator {
+    const pattern = labelPattern(label);
+    return this.page
+      .getByRole('textbox', { name: pattern })
+      .or(this.page.getByRole('spinbutton', { name: pattern }))
+      .or(this.page.getByLabel(pattern))
+      .or(this.page.getByPlaceholder(pattern))
+      .or(
+        this.page
+          .locator(`.MuiFormControl-root:has-text("${label}")`)
+          .locator('input, textarea:not([aria-hidden="true"])')
+      )
+      .locator('visible=true')
+      .first();
+  }
+
+  dropdown(label: string): Locator {
+    const pattern = labelPattern(label);
+    return this.page
+      .getByRole('combobox', { name: pattern })
+      .or(
+        this.page
+          .locator(`.MuiFormControl-root:has-text("${label}")`)
+          .locator('[role="combobox"], select')
+      )
+      .locator('visible=true')
+      .first();
+  }
+
+  checkbox(label: string): Locator {
+    const pattern = labelPattern(label);
+    return this.page
+      .getByRole('checkbox', { name: pattern })
+      .or(
+        this.page
+          .locator(`.MuiFormControl-root:has-text("${label}")`)
+          .locator('input[type="checkbox"]')
+      )
+      .locator('visible=true')
+      .first();
+  }
+
+  async selectOption(label: string, option: string) {
+    const dd = this.dropdown(label);
+    await dd.scrollIntoViewIfNeeded().catch(() => null);
+    await dd.click();
+    await this.page.getByRole('option', { name: option, exact: true }).click();
+  }
+
+  async selectFirstOption(label: string) {
+    const dd = this.dropdown(label);
+    await dd.scrollIntoViewIfNeeded().catch(() => null);
+    await dd.click();
+
+    const listbox = this.page.getByRole('listbox');
+    await expect(listbox).toBeVisible({ timeout: 5000 });
+
+    const options = listbox.getByRole('option');
+    await expect(options.first()).toBeVisible({ timeout: 5000 });
+
+    const count = await options.count();
+    let target = options.first();
+    for (let i = 0; i < count; i++) {
+      const opt = options.nth(i);
+      const text = (await opt.innerText()).trim();
+      if (text && !/^(select|none|choose)$/i.test(text)) {
+        target = opt;
+        break;
+      }
+    }
+    await target.click();
+    await expect(listbox).toBeHidden({ timeout: 5000 }).catch(async () => {
+      await this.page.keyboard.press('Escape').catch(() => null);
+    });
+  }
+
+  async fillField(field: FieldSpec) {
+    switch (field.kind) {
+      case 'text':
+      case 'textarea':
+        await this.textbox(field.label).fill(String(field.value ?? ''));
+        break;
+      case 'select':
+        if (typeof field.value === 'string') {
+          await this.selectOption(field.label, field.value);
+        } else {
+          await this.selectFirstOption(field.label);
+        }
+        break;
+      case 'checkbox':
+        if (field.value === false) {
+          await this.checkbox(field.label).uncheck();
+        } else {
+          await this.checkbox(field.label).check();
+        }
+        break;
+    }
+  }
+
+  /** Fills every field, skipping conditional ones whose trigger isn't set yet. */
+  async fillFields(fields: FieldSpec[]) {
+    const values = new Map<string, string>();
+    for (const field of fields) {
+      if (field.showWhen && values.get(field.showWhen.label) !== field.showWhen.equals) {
+        continue;
+      }
+      await this.fillField(field);
+      if (typeof field.value === 'string') {
+        values.set(field.label, field.value);
+      }
+    }
+  }
+
+  async checkBoxes(labels: string[]) {
+    for (const label of labels) {
+      await this.checkbox(label).check();
+    }
+  }
+
+  /** Uploads test-data/fixtures/measure.png via the hidden file input under "Measure Images". */
+  async uploadMeasureImage(filePath: string = MEASURE_IMAGE_FIXTURE) {
+    const input = this.page
+      .getByLabel('Take photos or upload images')
+      .or(
+        this.page
+          .locator('input[type="file"]')
+          .filter({ has: this.page.locator('xpath=ancestor::*[.//text()[contains(., "Measure Images")]]') })
+      )
+      .or(this.page.locator('input[type="file"]'))
+      .first();
+    await input.setInputFiles(filePath);
+
+    // If modal dialog pops up, confirm the upload by clicking Upload button
+    const uploadDialog = this.page.getByRole('dialog');
+    if (await uploadDialog.isVisible({ timeout: 3000 }).catch(() => false)) {
+      const modalUploadBtn = uploadDialog.getByRole('button', { name: 'Upload', exact: true });
+      if (await modalUploadBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await modalUploadBtn.click();
+        await uploadDialog.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => null);
+      }
+    }
+  }
+
+  async expectFieldValue(field: FieldSpec) {
+    if (field.kind === 'text' || field.kind === 'textarea') {
+      await expect(this.textbox(field.label), field.label).toHaveValue(String(field.value ?? ''));
+    } else if (field.kind === 'checkbox') {
+      if (field.value === false) {
+        await expect(this.checkbox(field.label), field.label).not.toBeChecked();
+      } else {
+        await expect(this.checkbox(field.label), field.label).toBeChecked();
+      }
+    }
+  }
+
+  async expectFieldValues(fields: FieldSpec[]) {
+    for (const field of fields) {
+      if (field.kind === 'text' || field.kind === 'textarea') {
+        await this.expectFieldValue(field);
+      }
+    }
+  }
+
+  async saveChanges() {
+    const isEnabled = await this.saveChangesButton.isEnabled({ timeout: 3000 }).catch(() => false);
+    if (!isEnabled) {
+      return;
+    }
+
+    await Promise.all([
+      this.page
+        .waitForResponse(
+          (res) => ['POST', 'PUT', 'PATCH'].includes(res.request().method()) && res.ok(),
+          { timeout: 20_000 },
+        )
+        .catch(() => null),
+      this.saveChangesButton.click(),
+    ]);
+
+    await this.page
+      .getByText(/Project updated successfully/i)
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .catch(() => null);
+  }
+
+  async goBackToProjectDetails() {
+    if (this.page.url().includes('/project-details/')) {
+      return;
+    }
+    const isVisible = await this.goBackToProjectDetailsLink.isVisible({ timeout: 2000 }).catch(() => false);
+    if (isVisible) {
+      await this.goBackToProjectDetailsLink.click().catch(() => null);
+    }
+    await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
+  }
+}
+
+/**
+ * The Insulation task screen: 11 tabs (Attic - Open, Basement - Ceiling,
+ * Wall - Exterior, ...), each single-instance, each gated by an
+ * "Is Auditable" dropdown, each with its own "Save Changes" button.
+ *
+ * "Attic - Open" and "Basement - Ceiling" are known to require a Measure
+ * Image when Is Auditable = Yes (from Snapshot's Save All validation).
+ * fillSection() below always uploads test-data/fixtures/measure.png when
+ * auditable = true, for every section, so this doesn't need to be tracked
+ * per-section.
+ */
+export class InsulationAssessmentPage {
+  readonly saveChangesButton: Locator;
+  readonly goBackToProjectDetailsLink: Locator;
+
+  constructor(private readonly page: Page) {
+    this.saveChangesButton = page.getByRole('button', { name: 'Save Changes' });
+    this.goBackToProjectDetailsLink = page.getByRole('link', {
+      name: 'Go Back to Project Details',
+    });
+  }
+
+  async expectLoaded() {
+    await expect(this.page).toHaveURL(/\/task\/insulation/, { timeout: 15_000 });
+    await this.page
+      .locator('text=Loading project details...')
+      .waitFor({ state: 'detached', timeout: 15_000 })
+      .catch(() => null);
+  }
+
+  sectionTab(name: string): Locator {
+    return this.page.getByText(name, { exact: true }).first();
+  }
+
+  async selectSection(section: InsulationSectionSpec) {
+    if (this.page.url().includes('/project-details/')) {
+      const board = new EnergyAssessmentPage(this.page);
+      await board.openTask('Insulation');
+      await this.expectLoaded();
+    }
+    await this.sectionTab(section.name).click();
+    const saveAndContinueBtn = this.page.getByRole('button', { name: /Save & Continue/i });
+    const discardAndContinueBtn = this.page.getByRole('button', { name: /Discard & Continue/i });
+    if (await saveAndContinueBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await saveAndContinueBtn.click();
+    } else if (await discardAndContinueBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await discardAndContinueBtn.click();
+    }
+    await expect(
+      this.page.getByText(`${section.name} - Instance 1`, { exact: true }),
+    ).toBeVisible({ timeout: 10_000 });
+  }
+
+  textbox(label: string): Locator {
+    const pattern = labelPattern(label);
+    return this.page
+      .getByRole('textbox', { name: pattern })
+      .or(this.page.getByRole('spinbutton', { name: pattern }))
+      .or(this.page.getByLabel(pattern))
+      .or(this.page.getByPlaceholder(pattern))
+      .or(
+        this.page
+          .locator(`.MuiFormControl-root:has-text("${label}")`)
+          .locator('input, textarea:not([aria-hidden="true"])')
+      )
+      .locator('visible=true')
+      .first();
+  }
+
+  dropdown(label: string): Locator {
+    const pattern = labelPattern(label);
+    return this.page
+      .getByRole('combobox', { name: pattern })
+      .or(
+        this.page
+          .locator(`.MuiFormControl-root:has-text("${label}")`)
+          .locator('[role="combobox"], select')
+      )
+      .locator('visible=true')
+      .first();
+  }
+
+  async selectOption(label: string, option: string) {
+    const dd = this.dropdown(label);
+    await dd.scrollIntoViewIfNeeded().catch(() => null);
+    await dd.click();
+    await this.page.getByRole('option', { name: option, exact: true }).click();
+  }
+
+  async selectFirstOption(label: string) {
+    const dd = this.dropdown(label);
+    await dd.scrollIntoViewIfNeeded().catch(() => null);
+    await dd.click();
+
+    const listbox = this.page.getByRole('listbox');
+    await expect(listbox).toBeVisible({ timeout: 5000 });
+
+    const options = listbox.getByRole('option');
+    await expect(options.first()).toBeVisible({ timeout: 5000 });
+
+    const count = await options.count();
+    let target = options.first();
+    for (let i = 0; i < count; i++) {
+      const opt = options.nth(i);
+      const text = (await opt.innerText()).trim();
+      if (text && !/^(select|none|choose)$/i.test(text)) {
+        target = opt;
+        break;
+      }
+    }
+    await target.click();
+    await expect(listbox).toBeHidden({ timeout: 5000 }).catch(async () => {
+      await this.page.keyboard.press('Escape').catch(() => null);
+    });
+  }
+
+  async fillField(field: FieldSpec) {
+    switch (field.kind) {
+      case 'text':
+      case 'textarea':
+        await this.textbox(field.label).fill(String(field.value ?? ''));
+        break;
+      case 'select':
+        if (typeof field.value === 'string') {
+          await this.selectOption(field.label, field.value);
+        } else {
+          await this.selectFirstOption(field.label);
+        }
+        break;
+    }
+  }
+
+  async fillFields(fields: FieldSpec[]) {
+    const values = new Map<string, string>();
+    for (const field of fields) {
+      if (field.showWhen && values.get(field.showWhen.label) !== field.showWhen.equals) {
+        continue;
+      }
+      await this.fillField(field);
+      if (typeof field.value === 'string') {
+        values.set(field.label, field.value);
+      }
+    }
+  }
+
+  async expectFieldValues(fields: FieldSpec[]) {
+    for (const field of fields) {
+      if (field.kind === 'text' || field.kind === 'textarea') {
+        await expect(this.textbox(field.label), field.label).toHaveValue(String(field.value ?? ''));
+      }
+    }
+  }
+
+  /** Uploads test-data/fixtures/measure.png for the currently selected section. */
+  async uploadMeasureImage(filePath: string = MEASURE_IMAGE_FIXTURE) {
+    const input = this.page
+      .getByLabel('Take photos or upload images')
+      .or(
+        this.page
+          .locator('input[type="file"]')
+          .filter({ has: this.page.locator('xpath=ancestor::*[.//text()[contains(., "Measure Images")]]') })
+      )
+      .or(this.page.locator('input[type="file"]'))
+      .first();
+    await input.setInputFiles(filePath);
+
+    // If modal dialog pops up, confirm the upload by clicking Upload button
+    const uploadDialog = this.page.getByRole('dialog');
+    if (await uploadDialog.isVisible({ timeout: 3000 }).catch(() => false)) {
+      const modalUploadBtn = uploadDialog.getByRole('button', { name: 'Upload', exact: true });
+      if (await modalUploadBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await modalUploadBtn.click();
+        await uploadDialog.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => null);
+      }
+    }
+  }
+
+  async saveChanges() {
+    const isEnabled = await this.saveChangesButton.isEnabled({ timeout: 3000 }).catch(() => false);
+    if (!isEnabled) {
+      return;
+    }
+
+    await Promise.all([
+      this.page
+        .waitForResponse(
+          (res) => ['POST', 'PUT', 'PATCH'].includes(res.request().method()) && res.ok(),
+          { timeout: 20_000 },
+        )
+        .catch(() => null),
+      this.saveChangesButton.click(),
+    ]);
+
+    await this.page
+      .getByText(/Project updated successfully/i)
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .catch(() => null);
+  }
+
+  /**
+   * Selects the section, sets Is Auditable, fills the rest and uploads a
+   * Measure Image when auditable, then saves.
+   */
+  async fillSection(
+    section: InsulationSectionSpec,
+    auditable: boolean,
+    options: { save?: boolean } = { save: true },
+  ) {
+    await this.selectSection(section);
+    const fields = insulationFields(section, auditable);
+    await this.fillFields(fields);
+    await this.expectFieldValues(fields);
+    if (auditable) {
+      await this.uploadMeasureImage();
+    }
+    if (options.save !== false) {
+      await this.saveChanges();
+    }
+  }
+
+  async goBackToProjectDetails() {
+    if (this.page.url().includes('/project-details/')) {
+      return;
+    }
+    const isVisible = await this.goBackToProjectDetailsLink.isVisible({ timeout: 2000 }).catch(() => false);
+    if (isVisible) {
+      await this.goBackToProjectDetailsLink.click().catch(() => null);
+    }
     await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
   }
 }

@@ -5,10 +5,20 @@ import {
   AppliancesAssessmentPage,
   AssessmentTaskPage,
   EnergyAssessmentPage,
+  GenericTaskFormPage,
+  InsulationAssessmentPage,
   ProjectDetailsPage,
   ProjectListPage,
   SnapshotPage,
 } from '../pages';
+import { APPLIANCE_SECTIONS } from '../test-data/assessment-tasks';
+import {
+  DOMESTIC_HOT_WATER_FIELDS,
+  INSULATION_SECTIONS,
+  SAFETY_BARRIER_LABELS,
+  SAFETY_INFO_FIELDS,
+  WATER_PACKAGE_FIELDS,
+} from '../test-data/energyAssessmentData';
 
 const projectFile = path.resolve('playwright/.auth/createdProject.json');
 const fixturePath = path.resolve('test-data/fixtures/measure.png');
@@ -143,17 +153,87 @@ test.describe.serial('Required Measures - Complete prerequisite tasks for Snapsh
     await task.goBackToProjectDetails();
   });
 
-  /**
-   * Precondition check for Snapshot suite: verifies that Save All on Snapshot tab passes validation.
-   */
-  test('Precondition check: Snapshot Save All succeeds with no validation alert', async ({ page }) => {
+  test('Domestic Hot Water -> Completed', async ({ page }) => {
+    await board.openTask('Domestic Hot Water');
+    const task = new GenericTaskFormPage(page);
+    await task.expectLoaded(/\/task\/domestic-hot-water/);
+
+    await task.fillFields(DOMESTIC_HOT_WATER_FIELDS);
+    await task.expectFieldValues(DOMESTIC_HOT_WATER_FIELDS);
+    await task.saveChanges();
+
+    await board.open();
+    await board.expectTaskInColumn('Domestic Hot Water', 'Completed');
+  });
+
+  test('Safety Information & Air Flow -> Completed', async ({ page }) => {
+    await board.openTask('Safety Information & Air Flow');
+    const task = new GenericTaskFormPage(page);
+    await task.expectLoaded(/\/task\/safety-information(-air-flow)?/);
+
+    await task.fillFields(SAFETY_INFO_FIELDS);
+    // Barriers are optional; checking one (Customer Declined) as a smoke check.
+    await task.checkBoxes([SAFETY_BARRIER_LABELS[SAFETY_BARRIER_LABELS.length - 2]]);
+    await task.expectFieldValues(SAFETY_INFO_FIELDS);
+    await task.saveChanges();
+
+    await board.open();
+    await board.expectTaskInColumn('Safety Information & Air Flow', 'Completed');
+  });
+
+  test('Water Package -> Completed', async ({ page }) => {
+    await board.openTask('Water Package');
+    const task = new GenericTaskFormPage(page);
+    await task.expectLoaded(/\/task\/water-package/);
+
+    await task.fillFields(WATER_PACKAGE_FIELDS);
+    await task.expectFieldValues(WATER_PACKAGE_FIELDS);
+    await task.saveChanges();
+
+    await board.open();
+    await board.expectTaskInColumn('Water Package', 'Completed');
+  });
+
+  test('Appliances: fill remaining tabs -> Completed', async ({ page }) => {
+    await board.openTask('Appliances');
+    const appliances = new AppliancesAssessmentPage(page);
+    await appliances.expectLoaded();
+
+    // fillSection/fillSectionFields is idempotent, so re-filling an already
+    // completed tab (e.g. Refrigerator) is harmless.
+    for (const section of APPLIANCE_SECTIONS) {
+      await appliances.selectSection(section, { saveOnSwitch: true });
+      await appliances.fillSectionFields(section);
+      await appliances.expectSectionValues(section);
+    }
+    await appliances.saveChanges();
+
+    await board.open();
+    await board.expectTaskInColumn('Appliances', 'Completed');
+  });
+
+  test('Insulation: fill all 11 sections, with Measure Images -> Completed', async ({ page }) => {
+    test.setTimeout(180_000);
+    await board.openTask('Insulation');
+    const insulation = new InsulationAssessmentPage(page);
+    await insulation.expectLoaded();
+
+    for (let i = 0; i < INSULATION_SECTIONS.length; i++) {
+      const section = INSULATION_SECTIONS[i];
+      const isLast = i === INSULATION_SECTIONS.length - 1;
+      await insulation.fillSection(section, true, { save: isLast });
+    }
+
+    await board.open();
+    await board.expectTaskInColumn('Insulation', 'Completed');
+  });
+
+  test('Snapshot Save All is unblocked after this stage', async ({ page }) => {
+    // Precondition check for tests/snapshot.spec.ts: Save All should succeed
+    // with no validation alert once every task above is Completed.
     const snapshot = new SnapshotPage(page);
     await projectDetailsPage.openSnapshot();
-
-    // Save All should succeed without any "Please fix the following before saving" alert
     await snapshot.saveAll();
-
-    // Verify success banner is shown
     await expect(page.getByText('Saved successfully')).toBeVisible({ timeout: 10_000 });
   });
 });

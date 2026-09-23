@@ -20,6 +20,9 @@ export interface FieldSpec {
    * - checkbox        : true to check, false to uncheck
    */
   value?: string | boolean;
+
+  /** Only fill/expect this field when the field named here equals this value. */
+  showWhen?: { label: string; equals: string };
 }
 
 /**

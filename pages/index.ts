@@ -14,6 +14,8 @@ export {
   EnergyAssessmentPage,
   AppliancesAssessmentPage,
   AssessmentTaskPage,
+  GenericTaskFormPage,
+  InsulationAssessmentPage,
 } from './EnergyAssessmentPage';
 export { Header } from './Header';
 export { SnapshotPage } from './SnapshotPage';
