@@ -42,12 +42,15 @@ export class BasePage {
       name: new RegExp(`^${value}$`, 'i'),
     });
 
-    // Step 4: Confirm option visibility and click it
+    // Step 4: Ensure option is scrolled into view and visible, then click
+    await option.scrollIntoViewIfNeeded().catch(() => null);
     await expect(option).toBeVisible();
     await option.click();
 
     // Step 5: Confirm the dropdown closed successfully
-    await expect(listbox).toBeHidden();
+    await expect(listbox).toBeHidden({ timeout: 5000 }).catch(async () => {
+      await this.page.keyboard.press('Escape').catch(() => null);
+    });
   }
 
   /**

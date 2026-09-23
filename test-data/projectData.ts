@@ -111,7 +111,7 @@ export const projectData = {
     },
     {
       fuelType: 'Other',
-      unit: '$/Unit',
+      unit: 'Unit',
       costPerUnit: 6.10,
       annualUsage: 35,
       expectedAnnualFuelCost: 213.5,

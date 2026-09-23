@@ -31,8 +31,8 @@ function isSessionValid(path: string): boolean {
 
     const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
 
-    // Ensure token is valid for at least another 5 minutes
-    return payload.exp && payload.exp * 1000 > Date.now() + 5 * 60 * 1000;
+    // Ensure token is valid for at least another 30 minutes to cover the full test chain
+    return payload.exp && payload.exp * 1000 > Date.now() + 30 * 60 * 1000;
   } catch {
     return false;
   }

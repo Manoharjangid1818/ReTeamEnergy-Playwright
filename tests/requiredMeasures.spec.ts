@@ -71,17 +71,17 @@ test.describe.serial('Required Measures - Complete prerequisite tasks for Snapsh
     await board.openTask('Appliances');
     await appliances.expectLoaded();
 
+    // Clothes Dryer required field: Dryer Type (filled first to prevent missing required field errors)
+    await appliances.selectSection('Clothes Dryer');
+    await appliances.selectFirstOption('Dryer Type');
+
     // Refrigerator required fields for Eversource: Unit Age, Usage, Equipment Owner, Upgrade Recommended, Input Watts
-    await appliances.selectSection('Refrigerator');
+    await appliances.selectSection('Refrigerator', { saveOnSwitch: true });
     await appliances.textbox('Unit Age').fill('12');
     await appliances.textbox('Input Watts').fill('150');
     await appliances.selectFirstOption('Usage');
     await appliances.selectFirstOption('Equipment Owner');
     await appliances.selectFirstOption('Upgrade Recommended');
-
-    // Clothes Dryer required field: Dryer Type
-    await appliances.selectSection('Clothes Dryer');
-    await appliances.selectFirstOption('Dryer Type');
 
     // Save Appliance changes to persist to backend
     await appliances.saveChanges();

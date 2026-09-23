@@ -154,49 +154,43 @@ export class ProjectListPage {
    * @param projectName Project identifier such as customer name or street address
    */
   async openProject(projectName: string) {
-    let specificLink: Locator | null = null;
+    const savedId = ProjectListPage.getSavedProjectId();
 
-    // 1. Check if the parameter directly matches a project link by ID or path
+    // 1. Direct match if projectName is an ID or path
     if (projectName.startsWith('/') || /^[0-9a-f-]{36}$/i.test(projectName)) {
-      const directCandidate = this.page.locator(`a[href*="${projectName}"]`);
+      const targetId = projectName.replace(/^\//, '');
+      const directCandidate = this.page.locator(`a[href*="${targetId}"]`);
       if (await directCandidate.isVisible({ timeout: 2000 }).catch(() => false)) {
-        specificLink = directCandidate;
+        await directCandidate.click();
+      } else {
+        await this.page.goto(`/project-details/${targetId}`);
       }
-    }
-
-    // 2. Direct match by visible name or address text on the project card
-    if (!specificLink) {
-      const nameMatch = this.page
+    } else if (savedId) {
+      // 2. Prioritize recently saved project ID if available from the creation stage
+      const idCandidate = this.page.locator(`a[href*="${savedId}"]`);
+      if (await idCandidate.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await idCandidate.click();
+      } else {
+        // If card is not visible immediately (e.g. search pagination), navigate directly by URL
+        await this.page.goto(`/project-details/${savedId}`);
+      }
+    } else {
+      // 3. Fall back to matching link by name/address if no savedId is present
+      const projectLink = this.page
         .getByRole('link')
         .filter({ hasText: projectName })
         .first();
 
-      if (await nameMatch.isVisible({ timeout: 2000 }).catch(() => false)) {
-        specificLink = nameMatch;
-      }
+      // Wait for the matching project link to be visible and click it
+      await expect(projectLink).toBeVisible({ timeout: 15_000 });
+      await projectLink.click();
     }
 
-    // 3. Fall back to recently created project ID if present
-    if (!specificLink) {
-      const savedId = ProjectListPage.getSavedProjectId();
-      if (savedId) {
-        const candidate = this.page.locator(`a[href*="${savedId}"]`);
-        if (await candidate.isVisible({ timeout: 4000 }).catch(() => false)) {
-          specificLink = candidate;
-        }
-      }
-    }
-
-    // Fall back to matching link by name/address if specific ID link isn't found
-    const projectLink =
-      specificLink ??
-      this.page
-        .getByRole('link')
-        .filter({ hasText: projectName })
-        .first();
-
-    // Wait for the matching project link to be visible and click it
-    await expect(projectLink).toBeVisible({ timeout: 15_000 });
-    await projectLink.click();
+    // Ensure navigation to Project Details completes and loading overlay detaches
+    await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
+    await this.page
+      .locator('text=Loading project details...')
+      .waitFor({ state: 'detached', timeout: 15_000 })
+      .catch(() => null);
   }
 }

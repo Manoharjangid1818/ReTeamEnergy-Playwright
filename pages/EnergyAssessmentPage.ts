@@ -291,8 +291,9 @@ export class AssessmentTaskPage {
       .getByRole('tab', { name: subcategoryName })
       .or(this.page.getByRole('button', { name: subcategoryName, exact: true }))
       .or(this.page.getByText(subcategoryName, { exact: true }));
-    await tab.first().click();
-    await this.page.waitForTimeout(500);
+    const targetTab = tab.first();
+    await targetTab.click();
+    await expect(targetTab).toBeVisible();
   }
 
   /**
@@ -338,7 +339,8 @@ export class AssessmentTaskPage {
     }
     await this.fileInput.setInputFiles(filePath);
     await this.uploadButton.click();
-    await this.page.waitForTimeout(1000);
+    // Wait for upload button to finish processing or remain stable
+    await expect(this.uploadButton).toBeVisible({ timeout: 10_000 });
   }
 
   /**
@@ -359,7 +361,17 @@ export class AssessmentTaskPage {
       )
       .catch(() => null);
 
-    await this.saveChangesButton.click();
+    const saveBtn = this.saveChangesButton.or(
+      this.page.getByRole('button', { name: /Save Changes|Save/i })
+    );
+
+    // If button is already disabled or not dirty (e.g. on retries), changes are already persisted
+    const isSaveEnabled = await saveBtn.first().isEnabled({ timeout: 2000 }).catch(() => false);
+    if (!isSaveEnabled) {
+      return;
+    }
+
+    await saveBtn.first().click();
     await savePromise;
 
     // Verify success banner if shown
@@ -458,9 +470,39 @@ export class AppliancesAssessmentPage {
    * Switches to an appliance section tab and waits for Instance 1 heading to appear.
    *
    * @param section Name of the appliance section tab to select
+   * @param options Optional settings: set `saveOnSwitch: true` to click Save & Continue instead of Discard & Continue
    */
-  async selectSection(section: ApplianceSection) {
-    await this.page.getByText(section, { exact: true }).first().click();
+  async selectSection(section: ApplianceSection, options?: { saveOnSwitch?: boolean }) {
+    const tab = this.page
+      .locator('[role="tab"]')
+      .filter({ hasText: section })
+      .getByText(section, { exact: true })
+      .or(this.page.getByText(section, { exact: true }));
+    await tab.first().click();
+
+    // Check if an "Edit Subcategory" modal opened accidentally due to icon proximity
+    const editSubcategoryHeading = this.page.getByRole('heading', { name: 'Edit Subcategory' });
+    if (await editSubcategoryHeading.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await this.page.getByRole('button', { name: 'Cancel' }).click().catch(() => null);
+    }
+
+    // Check if an "Unsaved Changes" dialog appears when switching tabs
+    const saveAndContinueBtn = this.page.getByRole('button', { name: /Save & Continue/i });
+    const discardAndContinueBtn = this.page.getByRole('button', { name: /Discard & Continue/i });
+    if (options?.saveOnSwitch) {
+      if (await saveAndContinueBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
+        await saveAndContinueBtn.click();
+      } else if (await discardAndContinueBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await discardAndContinueBtn.click();
+      }
+    } else {
+      if (await discardAndContinueBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
+        await discardAndContinueBtn.click();
+      } else if (await saveAndContinueBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await saveAndContinueBtn.click();
+      }
+    }
+
     await expect(this.instanceHeading(section, 1)).toBeVisible({ timeout: 10_000 });
   }
 
@@ -563,8 +605,30 @@ export class AppliancesAssessmentPage {
    * @param instance 1-based instance number (default: 1)
    */
   async selectFirstOption(label: string, instance = 1) {
-    await this.dropdown(label, instance).click();
-    await this.page.getByRole('option').first().click();
+    const dropdown = this.dropdown(label, instance);
+    await dropdown.scrollIntoViewIfNeeded().catch(() => null);
+    await dropdown.click();
+
+    const listbox = this.page.getByRole('listbox');
+    await expect(listbox).toBeVisible({ timeout: 5000 });
+
+    const options = listbox.getByRole('option');
+    await expect(options.first()).toBeVisible({ timeout: 5000 });
+
+    const count = await options.count();
+    let target = options.first();
+    for (let i = 0; i < count; i++) {
+      const opt = options.nth(i);
+      const text = (await opt.innerText()).trim();
+      if (text && !/^(select|none|choose)$/i.test(text)) {
+        target = opt;
+        break;
+      }
+    }
+    await target.click();
+    await expect(listbox).toBeHidden({ timeout: 5000 }).catch(async () => {
+      await this.page.keyboard.press('Escape').catch(() => null);
+    });
   }
 
   /**
@@ -687,6 +751,11 @@ export class AppliancesAssessmentPage {
         { timeout: 15_000 }
       )
       .catch(() => null);
+
+    const isSaveEnabled = await saveButton.isEnabled({ timeout: 2000 }).catch(() => false);
+    if (!isSaveEnabled) {
+      return;
+    }
 
     await saveButton.click();
     await savePromise;

@@ -225,7 +225,10 @@ export class EnergyCostsPage extends BasePage {
     });
 
     try {
-      return await option.isVisible();
+      await expect(option).toBeVisible({ timeout: 3000 });
+      return true;
+    } catch {
+      return false;
     } finally {
       // Press Escape to close dropdown without selecting, releasing focus
       await this.page.keyboard.press('Escape');
@@ -237,6 +240,12 @@ export class EnergyCostsPage extends BasePage {
    * Asserts that all fuel types have been added and no options remain in the dropdown.
    */
   async assertNoAvailableFuelTypes() {
+    // When all fuel types are added, the application disables the Add Fuel Cost button
+    if (await this.addFuelCostButton.isDisabled()) {
+      await expect(this.addFuelCostButton).toBeDisabled();
+      return;
+    }
+
     await this.openAddFuelCost();
     await this.fuelTypeSelect.click();
 
@@ -268,9 +277,10 @@ export class EnergyCostsPage extends BasePage {
 
     // Step 2: Handle unit field (editable only for 'Other')
     if (data.fuelType.toLowerCase() === 'other') {
+      const unitValue = (data.unit ?? 'Unit').replace(/^\$\/?/, '');
       await expect(this.unitInput).toBeEditable();
-      await this.fillInput(this.unitInput, data.unit ?? '$/Unit');
-      await this.verifyInputValue(this.unitInput, data.unit ?? '$/Unit');
+      await this.fillInput(this.unitInput, unitValue);
+      await this.verifyInputValue(this.unitInput, unitValue);
     } else if (data.unit) {
       await this.verifyInputValue(this.unitInput, data.unit);
     }

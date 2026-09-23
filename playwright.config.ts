@@ -19,14 +19,15 @@ export default defineConfig({
   /** Maximum time in milliseconds a single test can run before timing out (60s) */
   timeout: 60_000,
 
-  /** Run tests in parallel within files */
-  fullyParallel: true,
+  /** Pipeline runs sequentially on a single shared project instance */
+  fullyParallel: false,
+  workers: 1,
 
   /** Fail the build on CI if you accidentally left test.only in the source code */
   forbidOnly: !!process.env.CI,
 
-  /** Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /** Retry on CI (2 retries) and locally (1 retry for transient network resilience) */
+  retries: process.env.CI ? 2 : 1,
 
   /** Generates an HTML report without automatically popping up the browser */
   reporter: [['html', { open: 'never' }]],
@@ -38,6 +39,12 @@ export default defineConfig({
 
     /** Path to the saved authenticated session JSON created by globalSetup */
     storageState: 'playwright/.auth/user.json',
+
+    /** Default timeout for each action like click or fill (15s) */
+    actionTimeout: 15_000,
+
+    /** Default navigation timeout for page.goto / redirects (30s) */
+    navigationTimeout: 30_000,
 
     /** Record traces only when retrying a failed test to save disk space */
     trace: 'on-first-retry',

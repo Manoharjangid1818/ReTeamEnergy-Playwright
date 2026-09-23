@@ -72,7 +72,7 @@ export const APPLIANCE_FIELDS: Record<ApplianceSection, FieldSpec[]> = {
   ],
 
   'Clothes Dryer': [
-    { label: 'Dryer Type', kind: 'select' },
+    { label: 'Dryer Type', kind: 'select', value: 'Electricity' },
     { label: 'Age', kind: 'text', value: '10' },
     { label: 'Upgrade Recommended', kind: 'select' },
     { label: 'Serial Number', kind: 'text', value: '12345678' },

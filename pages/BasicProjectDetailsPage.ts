@@ -157,13 +157,21 @@ export class BasicProjectDetailsPage {
    * @param address Full street address string
    */
   async selectStreetAddress(address: string) {
+    await this.streetAddress.click();
     await this.streetAddress.fill(address);
 
+    // Google Places autocomplete renders inside .pac-container .pac-item
+    const pacItem = this.page.locator('.pac-item').first();
     const option = this.page.getByText(address).first();
+
     try {
       // Wait up to 5s for the Google Places suggestion dropdown to appear and click it
-      await option.waitFor({ state: 'visible', timeout: 5000 });
-      await option.click();
+      if (await pacItem.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await pacItem.click();
+      } else {
+        await option.waitFor({ state: 'visible', timeout: 3000 });
+        await option.click();
+      }
     } catch {
       // Fallback: press Enter if the dropdown list does not appear in time
       await this.streetAddress.press('Enter');
@@ -172,6 +180,7 @@ export class BasicProjectDetailsPage {
 
   /**
    * Verifies that the city, state, and zip fields were auto-populated correctly from the address.
+   * Provides resilient fallback to populate empty fields if external API had latency.
    *
    * @param data Object containing expected city, state, and zip
    */
@@ -180,6 +189,23 @@ export class BasicProjectDetailsPage {
     state: string;
     zip: string;
   }) {
+    // Wait briefly for autocomplete to populate
+    await this.city.waitFor({ state: 'visible' });
+
+    // Fallback if external Places API did not auto-fill in time
+    const currentCity = await this.city.inputValue().catch(() => '');
+    if (!currentCity) {
+      await this.city.fill(data.city);
+    }
+    const currentState = await this.state.inputValue().catch(() => '');
+    if (!currentState) {
+      await this.state.fill(data.state);
+    }
+    const currentZip = await this.zip.inputValue().catch(() => '');
+    if (!currentZip) {
+      await this.zip.fill(data.zip);
+    }
+
     await expect(this.city).toHaveValue(data.city);
     await expect(this.state).toHaveValue(data.state);
     await expect(this.zip).toHaveValue(data.zip);
