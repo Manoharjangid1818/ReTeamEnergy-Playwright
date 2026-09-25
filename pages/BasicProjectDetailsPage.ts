@@ -1,5 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { urls } from '../test-data/urls';
+import { appRoutes } from '../test-data/commonTestData';
 
 /**
  * Page object representing the project creation form (/manage-project).
@@ -69,7 +69,7 @@ export class BasicProjectDetailsPage {
    * Navigates directly to the project creation page (/manage-project).
    */
   async open() {
-    await this.page.goto(urls.manageProject);
+    await this.page.goto(appRoutes.manageProject);
   }
 
   private createdProjectName: string = '';

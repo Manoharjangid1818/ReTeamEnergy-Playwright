@@ -2,10 +2,12 @@ import { test, expect } from '@playwright/test';
 
 import {
   ProjectListPage,
+  ProjectDetailsPage,
   EnergyCostsPage,
 } from '../pages';
 
-import { projectData } from '../test-data/projectData';
+import { energyCostsData } from '../test-data/energyCostsData';
+import { projectListPageData } from '../test-data/projectListPageData';
 
 /**
  * End-to-end test: Fuel Costs management under Energy Costs.
@@ -17,10 +19,11 @@ import { projectData } from '../test-data/projectData';
  */
 test('Energy Costs → Add Fuel Costs', async ({ page }) => {
   // Allow ample time for deleting multiple existing rows and adding each fuel type
-  test.setTimeout(90_000);
+  test.setTimeout(120_000);
 
   // Initialize page objects
   const projectListPage = new ProjectListPage(page);
+  const projectDetailsPage = new ProjectDetailsPage(page);
   const energyCostsPage = new EnergyCostsPage(page);
 
   // Step 1: Navigate to home page
@@ -29,13 +32,17 @@ test('Energy Costs → Add Fuel Costs', async ({ page }) => {
 
   // Step 2: Search for the target project by project name
   await projectListPage.searchProject(
-    `${projectData.firstName} ${projectData.lastName}`
+    projectListPageData.projectName
   );
 
   // Step 3: Open the matching project
   await projectListPage.openProject(
-    projectData.streetAddress
+    projectListPageData.projectAddress
   );
+
+  // Wait for Project Details screen to load
+  await projectDetailsPage.waitForPageReady();
+  await expect(page).toHaveURL(/project-details/);
 
   // Step 4: Switch to the Energy Costs tab
   await energyCostsPage.openEnergyCosts();
@@ -45,7 +52,7 @@ test('Energy Costs → Add Fuel Costs', async ({ page }) => {
   await energyCostsPage.deleteAllFuelCosts();
 
   // Step 6: Loop through each fuel cost definition in test data and add it
-  for (const fuelCost of projectData.fuelCosts) {
+  for (const fuelCost of energyCostsData.fuelCosts) {
     await energyCostsPage.openAddFuelCost();
 
     // Check if this fuel type is still available to select

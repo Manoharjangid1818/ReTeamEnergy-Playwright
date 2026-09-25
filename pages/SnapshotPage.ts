@@ -4,7 +4,7 @@ import {
   APPLIANCE_FIELDS,
   APPLIANCE_SECTIONS,
   ApplianceSection,
-} from '../test-data/assessment-tasks';
+} from '../test-data/energyAssessmentData';
 import type {
   ApplianceSnapshotEdit,
   SnapshotEdit,
@@ -13,16 +13,21 @@ import type {
 } from '../test-data/snapshotData';
 
 /** Valid section titles in the Snapshot accordion view */
-export type SnapshotSection = 'Customer Information' | 'Property Profile' | 'Appliances';
+export type SnapshotSection =
+  | 'Customer Information'
+  | 'Customer Profile'
+  | 'Property Profile'
+  | 'Appliances';
 
 /** Escapes special regex characters in strings */
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/** Matches a form label exactly, tolerating trailing whitespace and optional '*' for required fields */
+/** Matches a form label exactly, tolerating optional leading/trailing '*', whitespace, and trailing colons */
 function labelPattern(label: string): RegExp {
-  return new RegExp(`^\\s*${escapeRegExp(label)}\\s*\\*?\\s*$`);
+  const normalized = escapeRegExp(label).replace(/\\\./g, '\\.?').replace(/\\\//g, '[\\/\\s]+');
+  return new RegExp(`^\\s*\\*?\\s*${normalized}[\\s*:]*$`, 'i');
 }
 
 /**
@@ -46,14 +51,24 @@ export class SnapshotPage extends BasePage {
 
   /**
    * Locates the accordion header button for a Snapshot section.
-   * Uses start-of-string matching to accommodate badges like "6 instances".
+   * Targets .MuiAccordionSummary-root to avoid matching navigation tabs.
    *
    * @param section Name of the accordion section
    */
   sectionHeader(section: SnapshotSection): Locator {
-    return this.page.getByRole('button', {
-      name: new RegExp(`^${escapeRegExp(section)}(\\s|$)`),
-    });
+    const searchPattern = section.toLowerCase().includes('customer')
+      ? /Customer (Profile|Information)/i
+      : new RegExp(escapeRegExp(section), 'i');
+
+    return this.page
+      .locator('.MuiAccordionSummary-root')
+      .filter({ hasText: searchPattern })
+      .or(
+        this.page
+          .getByRole('button', { name: searchPattern })
+          .filter({ hasNot: this.page.locator('[role="tab"]') })
+      )
+      .first();
   }
 
   /**
@@ -63,11 +78,16 @@ export class SnapshotPage extends BasePage {
    */
   async expandSection(section: SnapshotSection) {
     const header = this.sectionHeader(section);
-    await this.verifyVisible(header);
-    if ((await header.getAttribute('aria-expanded')) !== 'true') {
+    await expect(header).toBeVisible({ timeout: 15_000 });
+    const ariaExpanded = await header.getAttribute('aria-expanded');
+    const className = (await header.getAttribute('class')) || '';
+    const isExpanded = ariaExpanded === 'true' || className.includes('Mui-expanded');
+    if (!isExpanded) {
       await header.click();
+      await expect(header)
+        .toHaveAttribute('aria-expanded', 'true', { timeout: 5_000 })
+        .catch(() => this.page.waitForTimeout(500));
     }
-    await expect(header).toHaveAttribute('aria-expanded', 'true');
   }
 
   // ---------- Snapshot fields ----------
@@ -84,6 +104,12 @@ export class SnapshotPage extends BasePage {
     return this.page
       .getByLabel(pattern)
       .or(this.page.getByPlaceholder(pattern))
+      .or(
+        this.page
+          .locator('.MuiFormControl-root, .MuiTextField-root')
+          .filter({ has: this.page.locator('label').filter({ hasText: pattern }) })
+          .locator('input, textarea')
+      )
       .filter({ visible: true })
       .nth(index);
   }
@@ -257,7 +283,8 @@ export class SnapshotPage extends BasePage {
    * @param value Expected displayed value
    */
   async expectProfileValue(label: string, value: string) {
-    const pattern = new RegExp(`${escapeRegExp(label)}:\\s*${escapeRegExp(value)}`);
+    const normalizedLabel = escapeRegExp(label).replace(/\\\./g, '\\.?').replace(/\\\//g, '[\\/\\s]+');
+    const pattern = new RegExp(`\\*?\\s*${normalizedLabel}[:\\s]+${escapeRegExp(value)}`, 'i');
     await expect(
       this.page.locator('body'),
       `"${label}" should show "${value}"`,

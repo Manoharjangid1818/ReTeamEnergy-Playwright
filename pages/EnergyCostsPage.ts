@@ -148,7 +148,19 @@ export class EnergyCostsPage extends BasePage {
    * Useful when new table rows require a refresh to render.
    */
   private async refreshEnergyCosts() {
+    const withImagesPromise = this.page
+      .waitForResponse(
+        (res) => res.url().includes('/with-images') && res.status() === 200,
+        { timeout: 15_000 }
+      )
+      .catch(() => null);
+
     await this.page.reload();
+    await withImagesPromise;
+    await this.page
+      .locator('text=Loading project details...')
+      .waitFor({ state: 'detached', timeout: 15_000 })
+      .catch(() => null);
     await this.openEnergyCosts();
     await this.waitForPageReady();
   }
@@ -174,35 +186,50 @@ export class EnergyCostsPage extends BasePage {
    * Confirms each deletion modal and verifies the 'No fuel costs added yet' placeholder.
    */
   async deleteAllFuelCosts() {
-    const hasFuelCosts = await this.deleteFuelCostButtons.count() > 0;
+    // Wait for table to finish loading: either at least one row exists or empty placeholder appears
+    await Promise.race([
+      this.deleteFuelCostButtons.first().waitFor({ state: 'visible', timeout: 10_000 }),
+      this.noFuelCostsMessage.waitFor({ state: 'visible', timeout: 10_000 }),
+    ]).catch(() => null);
 
     // If already empty, verify empty message and return
-    if (!hasFuelCosts) {
+    if ((await this.deleteFuelCostButtons.count()) === 0) {
       await expect(this.noFuelCostsMessage).toBeVisible();
       return;
     }
 
     // Loop through each delete button in the table
-    while (await this.deleteFuelCostButtons.count() > 0) {
+    while ((await this.deleteFuelCostButtons.count()) > 0) {
+      const initialCount = await this.deleteFuelCostButtons.count();
       const deleteButton = this.deleteFuelCostButtons.first();
-      const fuelRow = deleteButton.locator('xpath=ancestor::tr');
-      const fuelName = (await fuelRow.locator('td').first().innerText()).trim();
 
       // Click delete button on the row
       await deleteButton.click();
 
       // Confirm in the modal dialog
       await expect(this.deleteFuelCostModal).toBeVisible();
-      await this.deleteFuelCostConfirmButton.click();
 
-      // Verify the deleted row is gone from the table
-      await expect(
-        this.page.locator('tbody tr').filter({ hasText: fuelName })
-      ).toHaveCount(0);
+      const deleteResponse = this.page
+        .waitForResponse(
+          (res) =>
+            res.url().includes('/api/fuel-costs/') &&
+            (res.status() === 200 || res.status() === 204),
+          { timeout: 15_000 }
+        )
+        .catch(() => null);
+
+      await this.deleteFuelCostConfirmButton.click();
+      await deleteResponse;
+      await expect(this.deleteFuelCostModal).toBeHidden({ timeout: 5000 }).catch(() => null);
+
+      // Verify the number of fuel cost rows decreased
+      await expect(this.deleteFuelCostButtons).toHaveCount(initialCount - 1, {
+        timeout: 10_000,
+      });
     }
 
     // Verify empty state message appears
-    await expect(this.noFuelCostsMessage).toBeVisible();
+    await expect(this.noFuelCostsMessage).toBeVisible({ timeout: 10_000 });
   }
 
   /**
@@ -309,7 +336,27 @@ export class EnergyCostsPage extends BasePage {
 
     // Step 6: Submit the form
     await expect(this.addFuelCostSubmitButton).toBeEnabled();
+
+    // Set up network response listeners to ensure backend creates the record and updates project data
+    const responsePromise = this.page
+      .waitForResponse(
+        (res) =>
+          res.url().includes('/api/fuel-costs') &&
+          (res.status() === 200 || res.status() === 201),
+        { timeout: 15_000 }
+      )
+      .catch(() => null);
+
+    const withImagesPromise = this.page
+      .waitForResponse(
+        (res) => res.url().includes('/with-images') && res.status() === 200,
+        { timeout: 15_000 }
+      )
+      .catch(() => null);
+
     await this.addFuelCostSubmitButton.click();
+    await responsePromise;
+    await withImagesPromise;
     await expect(this.fuelCostSuccessMessage).toBeVisible();
 
     // Step 7: Confirm modal closes
@@ -323,11 +370,11 @@ export class EnergyCostsPage extends BasePage {
       }),
     });
 
-    const isRowVisible = await fuelRow.isVisible().catch(() => false);
-    if (!isRowVisible) {
+    try {
+      await expect(fuelRow.first()).toBeVisible({ timeout: 10_000 });
+    } catch {
       await this.refreshEnergyCosts();
+      await expect(fuelRow.first()).toBeVisible({ timeout: 15_000 });
     }
-
-    await expect(fuelRow).toBeVisible({ timeout: 15_000 });
   }
 }

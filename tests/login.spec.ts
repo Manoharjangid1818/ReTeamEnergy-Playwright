@@ -7,7 +7,7 @@ import {
   BasicProjectDetailsPage,
 } from '../pages';
 
-import { projectData } from '../test-data/projectData';
+import { basicProjectDetailsData } from '../test-data/basicProjectDetailsData';
 
 /**
  * End-to-end test: Login verification and new project creation.
@@ -42,23 +42,23 @@ test('Login → Add Project → Logout', async ({ page }) => {
   );
 
   // Step 5: Fill applicant basic details (first and last name)
-  await basicProjectDetailsPage.fillBasicDetails(projectData);
+  await basicProjectDetailsPage.fillBasicDetails(basicProjectDetailsData);
 
   // Step 6: Select assessor from the dropdown
   await basicProjectDetailsPage.selectAssessor(
-    projectData.assessor
+    basicProjectDetailsData.assessor
   );
 
   // Step 7: Enter street address and select Google Places autocomplete match
   await basicProjectDetailsPage.selectStreetAddress(
-    projectData.streetAddress
+    basicProjectDetailsData.streetAddress
   );
 
   // Step 8: Verify city, state, and zip code auto-populated correctly
   await basicProjectDetailsPage.verifyAddressDetails({
-    city: projectData.city,
-    state: projectData.state,
-    zip: projectData.zip,
+    city: basicProjectDetailsData.city,
+    state: basicProjectDetailsData.state,
+    zip: basicProjectDetailsData.zip,
   });
 
   // Step 9: Fill project assessment start date and time
@@ -66,22 +66,22 @@ test('Login → Add Project → Logout', async ({ page }) => {
 
   // Step 10: Select project type from dropdown
   await basicProjectDetailsPage.selectProjectType(
-    projectData.projectType
+    basicProjectDetailsData.projectType
   );
 
   // Step 11: Select building type from dropdown
   await basicProjectDetailsPage.selectBuildingType(
-    projectData.buildingType
+    basicProjectDetailsData.buildingType
   );
 
   // Step 12: Select configuration from dropdown
   await basicProjectDetailsPage.selectConfiguration(
-    projectData.configuration
+    basicProjectDetailsData.configuration
   );
 
   // Step 13: Select program type from dropdown
   await basicProjectDetailsPage.selectProgramType(
-    projectData.programType
+    basicProjectDetailsData.programType
   );
 
   // Step 14: Submit form and verify successful creation

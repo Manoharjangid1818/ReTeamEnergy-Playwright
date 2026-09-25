@@ -19,6 +19,11 @@ export default defineConfig({
   /** Maximum time in milliseconds a single test can run before timing out (60s) */
   timeout: 60_000,
 
+  /** Default timeout for expect() assertions (15s) to tolerate cloud runner network latency */
+  expect: {
+    timeout: 15_000,
+  },
+
   /** Pipeline runs sequentially on a single shared project instance */
   fullyParallel: false,
   workers: 1,
@@ -29,8 +34,10 @@ export default defineConfig({
   /** Retry on CI (2 retries) and locally (1 retry for transient network resilience) */
   retries: process.env.CI ? 2 : 1,
 
-  /** Generates an HTML report without automatically popping up the browser */
-  reporter: [['html', { open: 'never' }]],
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }],
+  ],
 
   /** Shared settings across all projects */
   use: {

@@ -6,7 +6,9 @@ import {
   PropertyProfilePage,
 } from '../pages';
 
-import { projectData } from '../test-data/projectData';
+import { projectIdentityData } from '../test-data/commonTestData';
+import { projectListPageData } from '../test-data/projectListPageData';
+import { propertyProfileData } from '../test-data/propertyProfileData';
 
 /**
  * End-to-end test: Property Profile creation and calculation verification.
@@ -28,12 +30,12 @@ test('Property Profile → Add Property Profile', async ({ page }) => {
 
   // Step 2: Search for the target project by project name
   await projectListPage.searchProject(
-    `${projectData.firstName} ${projectData.lastName}`
+    projectListPageData.projectName
   );
 
   // Step 3: Open the matching project
   await projectListPage.openProject(
-    projectData.streetAddress
+    projectListPageData.projectAddress
   );
 
   // Step 4: Wait for Project Details page to be ready
@@ -50,51 +52,51 @@ test('Property Profile → Add Property Profile', async ({ page }) => {
   await propertyProfilePage.waitForPageReady();
 
   // Step 8: Fill Property Details (ownership, building type, orientation, year built)
-  await propertyProfilePage.selectRentOrOwn(projectData.rentOrOwn);
-  await propertyProfilePage.selectBuildingType(projectData.buildingType);
-  await propertyProfilePage.selectHouseType(projectData.houseType);
-  await propertyProfilePage.selectHomeOrientation(projectData.homeOrientation);
-  await propertyProfilePage.selectNumberOfAttachedSides(projectData.numberofattachedsides);
-  await propertyProfilePage.fillYearBuilt(projectData.yearBuilt);
+  await propertyProfilePage.selectRentOrOwn(propertyProfileData.rentOrOwn);
+  await propertyProfilePage.selectBuildingType(projectIdentityData.buildingType);
+  await propertyProfilePage.selectHouseType(propertyProfileData.houseType);
+  await propertyProfilePage.selectHomeOrientation(propertyProfileData.homeOrientation);
+  await propertyProfilePage.selectNumberOfAttachedSides(propertyProfileData.numberOfAttachedSides);
+  await propertyProfilePage.fillYearBuilt(propertyProfileData.yearBuilt);
 
   // Step 9: Fill Square Footage & Ceiling Height
-  await propertyProfilePage.selectNumberOfFloorsAboveGrade(projectData.numberOfFloorsAboveGrade);
-  await propertyProfilePage.fillHeatedAboveGradeSquareFeet(projectData.heatedAboveGradeSquareFeet);
-  await propertyProfilePage.fillAboveGradeCeilingHeight(projectData.aboveGradeCeilingHeight);
+  await propertyProfilePage.selectNumberOfFloorsAboveGrade(propertyProfileData.numberOfFloorsAboveGrade);
+  await propertyProfilePage.fillHeatedAboveGradeSquareFeet(propertyProfileData.heatedAboveGradeSquareFeet);
+  await propertyProfilePage.fillAboveGradeCeilingHeight(propertyProfileData.aboveGradeCeilingHeight);
 
   // Step 10: Fill Basement specifications
-  await propertyProfilePage.selectBasementType(projectData.basementType);
-  await propertyProfilePage.fillBasementSquareFeet(projectData.basementSquareFeet);
-  await propertyProfilePage.fillHeatedBasementSquareFeet(projectData.heateBasementSquareFeet);
-  await propertyProfilePage.fillBasementCeilingHeight(projectData.basementCeilingHeight);
+  await propertyProfilePage.selectBasementType(propertyProfileData.basementType);
+  await propertyProfilePage.fillBasementSquareFeet(propertyProfileData.basementSquareFeet);
+  await propertyProfilePage.fillHeatedBasementSquareFeet(propertyProfileData.heatedBasementSquareFeet);
+  await propertyProfilePage.fillBasementCeilingHeight(propertyProfileData.basementCeilingHeight);
 
   // Step 11: Fill Occupancy and ambient temperature
-  await propertyProfilePage.fillNumberOfOccupants(projectData.numberoOfOccupants);
-  await propertyProfilePage.fillNumberOfBedrooms(projectData.numberOfBedrooms);
-  await propertyProfilePage.fillOutsideTemperature(projectData.outsideTemperature);
+  await propertyProfilePage.fillNumberOfOccupants(propertyProfileData.numberOfOccupants);
+  await propertyProfilePage.fillNumberOfBedrooms(propertyProfileData.numberOfBedrooms);
+  await propertyProfilePage.fillOutsideTemperature(propertyProfileData.outsideTemperature);
 
   // Step 12: Fill Heating specifications
-  await propertyProfilePage.selectHeatingType(projectData.heatingtype);
-  await propertyProfilePage.selectPrimaryHeatingFuel(projectData.primaryheatingfuel);
-  await propertyProfilePage.selectSecondaryHeatingFuel(projectData.secondaryheatingfuel);
+  await propertyProfilePage.selectHeatingType(propertyProfileData.heatingType);
+  await propertyProfilePage.selectPrimaryHeatingFuel(propertyProfileData.primaryHeatingFuel);
+  await propertyProfilePage.selectSecondaryHeatingFuel(propertyProfileData.secondaryHeatingFuel);
 
   // Step 13: Fill Cooling specifications
-  await propertyProfilePage.selectCoolingType(projectData.coolingtype);
-  await propertyProfilePage.selectCentralAcPresent(projectData.centralacpresent);
-  await propertyProfilePage.selectDuctworkPresent(projectData.ductworkpresent);
+  await propertyProfilePage.selectCoolingType(propertyProfileData.coolingType);
+  await propertyProfilePage.selectCentralAcPresent(propertyProfileData.centralAcPresent);
+  await propertyProfilePage.selectDuctworkPresent(propertyProfileData.ductworkPresent);
 
   // Step 14: Fill Domestic Hot Water (DHW) fuel
-  await propertyProfilePage.selectPrimaryDhwFuel(projectData.primarydhwfuel);
+  await propertyProfilePage.selectPrimaryDhwFuel(propertyProfileData.primaryDhwFuel);
 
   // Step 15: Verify system-calculated engineering values
   await propertyProfilePage.verifyTotalHeatedSquareFeet(
-    projectData.expectedTotalHeatedSquareFeet
+    propertyProfileData.expectedTotalHeatedSquareFeet
   );
   await propertyProfilePage.verifyTotalHeatedVolume(
-    projectData.expectedTotalHeatedVolume
+    propertyProfileData.expectedTotalHeatedVolume
   );
   await propertyProfilePage.verifyMVG(
-    projectData.expectedMVG
+    propertyProfileData.expectedMVG
   );
 
   // Step 16: Save Property Profile

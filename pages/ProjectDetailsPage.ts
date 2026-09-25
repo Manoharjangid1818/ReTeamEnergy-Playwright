@@ -71,6 +71,10 @@ export class ProjectDetailsPage {
    */
   async waitForPageReady() {
     await expect(this.page).toHaveURL(/project-details/, { timeout: 15_000 });
+    await this.page
+      .getByText(/Loading project details/i)
+      .waitFor({ state: 'detached', timeout: 20_000 })
+      .catch(() => {});
     await expect(this.customerProfileTab).toBeVisible({ timeout: 15_000 });
   }
 

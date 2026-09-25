@@ -11,8 +11,8 @@ import {
   ProjectListPage,
   SnapshotPage,
 } from '../pages';
-import { APPLIANCE_SECTIONS } from '../test-data/assessment-tasks';
 import {
+  APPLIANCE_SECTIONS,
   DOMESTIC_HOT_WATER_FIELDS,
   INSULATION_SECTIONS,
   SAFETY_BARRIER_LABELS,
@@ -21,7 +21,7 @@ import {
 } from '../test-data/energyAssessmentData';
 
 const projectFile = path.resolve('playwright/.auth/createdProject.json');
-const fixturePath = path.resolve('test-data/fixtures/measure.png');
+const fixturePath = path.resolve('fixtures/images/measure.png');
 
 /**
  * Required Measures test suite (project: 'required-measures').

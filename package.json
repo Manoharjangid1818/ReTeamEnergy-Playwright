@@ -1,9 +1,15 @@
 {
   "name": "reteamenergy-playwright",
   "version": "1.0.0",
-  "description": "",
+  "description": "End-to-end tests and Checkly synthetic monitoring for ReTeam Energy.",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test:e2e": "playwright test",
+    "checkly:list": "checkly test --list",
+    "checkly:test": "checkly test --env-file=.env",
+    "checkly:preview": "checkly deploy --preview",
+    "checkly:deploy": "checkly deploy --force"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -11,7 +17,8 @@
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.2.0",
-    "typescript": "^7.0.2"
+    "checkly": "^9.5.0",
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "dotenv": "^17.4.2"

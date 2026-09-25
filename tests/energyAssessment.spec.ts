@@ -5,12 +5,12 @@ import {
   EnergyAssessmentPage,
   ProjectListPage,
 } from '../pages';
-import { airSealingTask } from '../test-data/energyAssessmentData';
 import {
   APPLIANCE_SECTIONS,
   ASSESSMENT_TASKS,
-} from '../test-data/assessment-tasks';
-import { projectData } from '../test-data/projectData';
+  airSealingTask,
+} from '../test-data/energyAssessmentData';
+import { projectListPageData } from '../test-data/projectListPageData';
 
 const { name: TASK_NAME, totalSections } = ASSESSMENT_TASKS.appliances;
 
@@ -36,9 +36,9 @@ test.describe.serial('Energy Assessment - Air Sealing and Appliances tasks', () 
 
       // Step 2: Search and open target project by project name
       await projectListPage.searchProject(
-        `${projectData.firstName} ${projectData.lastName}`
+        projectListPageData.projectName
       );
-      await projectListPage.openProject(projectData.streetAddress);
+      await projectListPage.openProject(projectListPageData.projectAddress);
 
       // Step 3: Open the Energy Assessment Kanban board
       await energyAssessmentPage.open();
@@ -150,9 +150,9 @@ test.describe.serial('Energy Assessment - Air Sealing and Appliances tasks', () 
 
       // Step 2: Search and open target project by project name
       await projectListPage.searchProject(
-        `${projectData.firstName} ${projectData.lastName}`
+        projectListPageData.projectName
       );
-      await projectListPage.openProject(projectData.streetAddress);
+      await projectListPage.openProject(projectListPageData.projectAddress);
 
       // Step 3: Open Energy Assessment board and locate Appliances card
       await board.open();

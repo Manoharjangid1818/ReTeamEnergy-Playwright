@@ -124,9 +124,9 @@ export class CustomerProfilePage extends BasePage {
   /**
    * Verifies that prefilled values match the project data submitted during project creation.
    *
-   * @param projectData Expected customer name, address, and building type
+   * @param expectedProjectData Expected customer name, address, and building type
    */
-  async verifyProjectData(projectData: {
+  async verifyProjectData(expectedProjectData: {
     firstName: string;
     lastName: string;
     streetAddress: string;
@@ -135,15 +135,15 @@ export class CustomerProfilePage extends BasePage {
     zipCode: string;
     buildingType: string;
   }) {
-    await this.verifyInputValue(this.firstNameInput, projectData.firstName);
-    await this.verifyInputValue(this.lastNameInput, projectData.lastName);
-    await this.verifyInputValue(this.streetAddressInput, projectData.streetAddress);
-    await this.verifyInputValue(this.cityInput, projectData.city);
-    await this.verifyInputValue(this.stateInput, projectData.state);
-    await this.verifyInputValue(this.zipCodeInput, projectData.zipCode);
+    await this.verifyInputValue(this.firstNameInput, expectedProjectData.firstName);
+    await this.verifyInputValue(this.lastNameInput, expectedProjectData.lastName);
+    await this.verifyInputValue(this.streetAddressInput, expectedProjectData.streetAddress);
+    await this.verifyInputValue(this.cityInput, expectedProjectData.city);
+    await this.verifyInputValue(this.stateInput, expectedProjectData.state);
+    await this.verifyInputValue(this.zipCodeInput, expectedProjectData.zipCode);
 
     await expect(this.buildingTypeSelect).toHaveText(
-      projectData.buildingType,
+      expectedProjectData.buildingType,
       { ignoreCase: true }
     );
   }

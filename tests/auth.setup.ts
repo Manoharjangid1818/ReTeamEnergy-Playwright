@@ -1,7 +1,7 @@
 import { chromium, expect, type FullConfig } from '@playwright/test';
 import { existsSync, readFileSync } from 'node:fs';
 import { LoginPage } from '../pages/LoginPage';
-import { testUser } from '../test-data/users';
+import { loginPageData } from '../test-data/loginPageData';
 
 /** File path where the authenticated browser storage state (cookies, local storage) is saved */
 const storageStatePath = 'playwright/.auth/user.json';
@@ -50,7 +50,7 @@ async function globalSetup(_config: FullConfig) {
   }
 
   // Step 2: Validate that login credentials exist in environment variables
-  if (!testUser.email || !testUser.password) {
+  if (!loginPageData.email || !loginPageData.password) {
     throw new Error(
       'Set RETEAM_EMAIL and RETEAM_PASSWORD in .env before running the tests.'
     );
@@ -65,7 +65,7 @@ async function globalSetup(_config: FullConfig) {
   // Step 4: Perform login via LoginPage object
   const loginPage = new LoginPage(page);
   await loginPage.open();
-  await loginPage.login(testUser.email, testUser.password);
+  await loginPage.login(loginPageData.email, loginPageData.password);
   await expect(page).toHaveURL('https://dev.reteamenergy.com/');
 
   // Step 5: Save cookies and local storage state to disk for reuse by all projects

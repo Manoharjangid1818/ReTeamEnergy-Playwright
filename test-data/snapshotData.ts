@@ -1,4 +1,4 @@
-import type { ApplianceSection } from './assessment-tasks';
+import type { ApplianceSection } from './energyAssessmentData';
 
 /**
  * Specification for a field to edit on the Snapshot tab.

@@ -5,8 +5,6 @@ import {
   APPLIANCE_SECTIONS,
   ApplianceSection,
   FieldSpec,
-} from '../test-data/assessment-tasks';
-import {
   InsulationSectionSpec,
   insulationFields,
 } from '../test-data/energyAssessmentData';
@@ -19,8 +17,8 @@ function labelPattern(label: string): RegExp {
   return new RegExp(`^\\s*${escapeRegExp(label)}\\s*\\*?\\s*$`);
 }
 
-/** test-data/fixtures/measure.png, used for every Measure Images upload below. */
-const MEASURE_IMAGE_FIXTURE = path.resolve(__dirname, '../test-data/fixtures/measure.png');
+/** fixtures/images/measure.png, used for every Measure Images upload below. */
+const MEASURE_IMAGE_FIXTURE = path.resolve(__dirname, '../fixtures/images/measure.png');
 
 /**
  * Status columns available on the Energy Assessment Kanban board.
@@ -942,7 +940,7 @@ export class GenericTaskFormPage {
     }
   }
 
-  /** Uploads test-data/fixtures/measure.png via the hidden file input under "Measure Images". */
+/** Uploads fixtures/images/measure.png via the hidden file input under "Measure Images". */
   async uploadMeasureImage(filePath: string = MEASURE_IMAGE_FIXTURE) {
     const input = this.page
       .getByLabel('Take photos or upload images')
@@ -1027,7 +1025,7 @@ export class GenericTaskFormPage {
  *
  * "Attic - Open" and "Basement - Ceiling" are known to require a Measure
  * Image when Is Auditable = Yes (from Snapshot's Save All validation).
- * fillSection() below always uploads test-data/fixtures/measure.png when
+ * fillSection() below always uploads fixtures/images/measure.png when
  * auditable = true, for every section, so this doesn't need to be tracked
  * per-section.
  */
@@ -1173,7 +1171,7 @@ export class InsulationAssessmentPage {
     }
   }
 
-  /** Uploads test-data/fixtures/measure.png for the currently selected section. */
+  /** Uploads fixtures/images/measure.png for the currently selected section. */
   async uploadMeasureImage(filePath: string = MEASURE_IMAGE_FIXTURE) {
     const input = this.page
       .getByLabel('Take photos or upload images')

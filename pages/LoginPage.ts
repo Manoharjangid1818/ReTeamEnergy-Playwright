@@ -1,5 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { urls } from '../test-data/urls';
+import { appRoutes } from '../test-data/commonTestData';
 
 /**
  * Page object representing the user login screen (/sign-in).
@@ -32,7 +32,7 @@ export class LoginPage {
    * Navigates directly to the application sign-in page.
    */
   async open() {
-    await this.page.goto(urls.signIn);
+    await this.page.goto(appRoutes.signIn);
   }
 
   /**

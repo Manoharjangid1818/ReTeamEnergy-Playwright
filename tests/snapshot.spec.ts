@@ -76,8 +76,8 @@ test.describe('Snapshot tab syncs to the source tabs', () => {
    * Note: No First Name or Last Name edits are performed to preserve project searchability.
    */
   test('Customer Information -> Customer profile tab', async ({ page }) => {
-    // Step 1: Expand Customer Information accordion
-    await snapshot.expandSection('Customer Information');
+    // Step 1: Expand Customer Profile accordion
+    await snapshot.expandSection('Customer Profile');
 
     // Step 2: Change fields and collect written values
     const written = await snapshot.changeFields(snapshotEdits.customerInformation);

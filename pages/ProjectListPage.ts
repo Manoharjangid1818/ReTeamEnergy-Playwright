@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Page, Locator, expect } from '@playwright/test';
-import { projectData } from '../test-data/projectData';
+import { projectListPageData } from '../test-data/projectListPageData';
 
 /**
  * Page object representing the project dashboard screen (/ or /projects).
@@ -38,7 +38,7 @@ export class ProjectListPage {
   /**
    * Retrieves the project name automatically captured from the project creation process.
    * Checks playwright/.auth/createdProject.json first, then process.env.SNAPSHOT_PROJECT_NAME,
-   * then falls back to projectData.
+   * then falls back to the project list test data.
    *
    * @returns The project name string
    */
@@ -54,7 +54,7 @@ export class ProjectListPage {
       }
     } catch {}
 
-    return `${projectData.firstName} ${projectData.lastName}`;
+    return projectListPageData.projectName;
   }
 
   /**

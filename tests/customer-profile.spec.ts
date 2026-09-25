@@ -6,7 +6,9 @@ import {
   CustomerProfilePage,
 } from '../pages';
 
-import { projectData } from '../test-data/projectData';
+import { projectIdentityData } from '../test-data/commonTestData';
+import { customerProfileData } from '../test-data/customerProfileData';
+import { projectListPageData } from '../test-data/projectListPageData';
 
 /**
  * End-to-end test: Customer Profile creation and verification.
@@ -30,12 +32,12 @@ test('Customer Profile → Add Customer Profile', async ({ page }) => {
 
   // Step 2: Search for the test project by project name
   await projectListPage.searchProject(
-    `${projectData.firstName} ${projectData.lastName}`
+    projectListPageData.projectName
   );
 
   // Step 3: Open the matching project from the search results
   await projectListPage.openProject(
-    projectData.streetAddress
+    projectListPageData.projectAddress
   );
 
   // Step 4: Wait for Project Details screen to load
@@ -53,25 +55,25 @@ test('Customer Profile → Add Customer Profile', async ({ page }) => {
 
   // Step 8: Verify prefilled project data matches initial creation inputs
   await customerProfilePage.verifyProjectData({
-    firstName: projectData.firstName,
-    lastName: projectData.lastName,
-    streetAddress: projectData.streetAddress,
-    city: projectData.city,
-    state: projectData.state,
-    zipCode: projectData.zip,
-    buildingType: projectData.buildingType,
+    firstName: projectIdentityData.firstName,
+    lastName: projectIdentityData.lastName,
+    streetAddress: projectIdentityData.streetAddress,
+    city: projectIdentityData.city,
+    state: projectIdentityData.state,
+    zipCode: projectIdentityData.zip,
+    buildingType: projectIdentityData.buildingType,
   });
 
   // Step 9: Fill Applicant Information (secondary project number)
   await customerProfilePage.fillApplicantInformation({
-    secondaryProjectNumber: projectData.secondaryProjectNumber,
+    secondaryProjectNumber: customerProfileData.secondaryProjectNumber,
   });
 
   // Step 10: Fill Contact Information (home phone, cell phone, email)
   await customerProfilePage.fillContactInformation({
-    homePhone: projectData.homePhone,
-    cellPhone: projectData.cellPhone,
-    email: projectData.applicantEmail,
+    homePhone: customerProfileData.homePhone,
+    cellPhone: customerProfileData.cellPhone,
+    email: customerProfileData.applicantEmail,
   });
 
   // Step 11: Verify Rent/Own toggle logic (Rent shows landlord form, Own hides it)
@@ -81,23 +83,23 @@ test('Customer Profile → Add Customer Profile', async ({ page }) => {
 
   // Step 12: Fill Landlord Information with address autocomplete
   await customerProfilePage.fillLandlordInformation({
-    firstName: projectData.landlordFirstName,
-    lastName: projectData.landlordLastName,
-    address: projectData.landlordAddress,
-    city: projectData.landlordCity,
-    phone: projectData.landlordPhone,
+    firstName: customerProfileData.landlordFirstName,
+    lastName: customerProfileData.landlordLastName,
+    address: customerProfileData.landlordAddress,
+    city: customerProfileData.landlordCity,
+    phone: customerProfileData.landlordPhone,
   });
 
   // Step 13: Select utility companies
-  await customerProfilePage.selectElectricCompany('Eversource');
-  await customerProfilePage.selectGasCompany('CNG');
+  await customerProfilePage.selectElectricCompany(customerProfileData.electricCompany);
+  await customerProfilePage.selectGasCompany(customerProfileData.gasCompany);
 
   // Step 14: Fill utility account and meter numbers
   await customerProfilePage.fillUtilityInformation({
-    electricMeterNumber: projectData.electricMeterNumber,
-    electricAccountNumber: projectData.electricAccountNumber,
-    gasAccountNumber: projectData.gasAccountNumber,
-    gasMeterNumber: projectData.gasMeterNumber,
+    electricMeterNumber: customerProfileData.electricMeterNumber,
+    electricAccountNumber: customerProfileData.electricAccountNumber,
+    gasAccountNumber: customerProfileData.gasAccountNumber,
+    gasMeterNumber: customerProfileData.gasMeterNumber,
   });
 
   // Step 15: Save the customer profile and verify confirmation message

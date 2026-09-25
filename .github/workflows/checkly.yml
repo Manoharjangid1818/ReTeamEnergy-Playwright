@@ -1,0 +1,38 @@
+name: Deploy Checkly monitoring
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'checkly.config.ts'
+      - '__checks__/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/checkly.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
+      CHECKLY_ACCOUNT_ID: ${{ secrets.CHECKLY_ACCOUNT_ID }}
+      RETEAM_BASE_URL: ${{ vars.RETEAM_BASE_URL || 'https://dev.reteamenergy.com' }}
+      CHECKLY_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+      CHECKLY_REPO_SHA: ${{ github.sha }}
+      CHECKLY_REPO_BRANCH: ${{ github.ref_name }}
+      CHECKLY_TEST_ENVIRONMENT: development
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Test Checkly monitors
+        run: npm run checkly:test
+      - name: Deploy Checkly monitors
+        run: npm run checkly:deploy
