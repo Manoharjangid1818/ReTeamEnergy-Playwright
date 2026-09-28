@@ -5,7 +5,6 @@ node_modules/
 # Environment variables & secrets
 .env
 .env.*
-!.env.example
 
 # Playwright test outputs, reports, and traces
 test-results/

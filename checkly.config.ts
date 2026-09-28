@@ -1,41 +1,43 @@
-import dotenv from 'dotenv'
 import { defineConfig } from 'checkly'
 
-dotenv.config()
-
+/**
+ * See https://www.checklyhq.com/docs/cli/project-structure/
+ */
 const config = defineConfig({
-  projectName: 'ReTeam Energy - Development',
-  logicalId: 'reteam-energy-development-monitoring',
+  /* A human friendly name for your project */
+  projectName: 'reteamenergy-playwright',
+  /** A logical ID that needs to be unique across your Checkly account,
+  * See https://www.checklyhq.com/docs/cli/constructs/ to learn more about logical IDs.
+  */
+  logicalId: 'reteamenergy-playwright',
+  /* Sets default values for Checks */
   checks: {
-    activated: true,
-    muted: false,
+    /* A default for how often your Check should run in minutes */
     frequency: 10,
-    locations: ['ap-south-1', 'eu-west-1'],
-    tags: ['reteam-energy', 'development', 'synthetic'],
+    /* Checkly data centers to run your Checks as monitors */
+    locations: ['us-east-1', 'eu-central-1'],
+    /** The Checkly Runtime identifier, determining npm packages and the Node.js version available at runtime.
+     * See https://www.checklyhq.com/docs/cli/npm-packages/
+     */
     runtimeId: '2025.04',
-    environmentVariables: [
-      { key: 'RETEAM_BASE_URL', value: process.env.RETEAM_BASE_URL ?? 'https://dev.reteamenergy.com' },
-      { key: 'RETEAM_EMAIL', value: process.env.RETEAM_EMAIL ?? '' },
-      { key: 'RETEAM_PASSWORD', value: process.env.RETEAM_PASSWORD ?? '' },
-    ],
+    /* A glob pattern that matches the Checks inside your repo, see https://www.checklyhq.com/docs/constructs/including-checks/#checks-checkmatch */
     checkMatch: '**/__checks__/**/*.check.ts',
-    browserChecks: {
-      testMatch: '**/__checks__/**/*.spec.ts',
-      playwrightConfig: {
-        timeout: 60_000,
-        use: {
-          baseURL: process.env.RETEAM_BASE_URL ?? 'https://dev.reteamenergy.com',
-          actionTimeout: 15_000,
-          navigationTimeout: 30_000,
-        },
+    /* Global configuration option for Browser and Multistep checks. See https://www.checklyhq.com/docs/browser-checks/playwright-test/#global-configuration */
+    playwrightConfig: {
+      timeout: 30000,
+      use: {
+        baseURL: 'https://dev.reteamenergy.com',
+        viewport: { width: 1280, height: 720 },
       },
     },
   },
   cli: {
-    runLocation: 'ap-south-1',
+    /* The default datacenter location to use when running npx checkly test */
+    runLocation: 'eu-central-1',
+    /* An array of default reporters to use when a reporter is not specified with the "--reporter" flag */
     reporters: ['list'],
+    /* How many times to retry a failing test run when running `npx checkly test` or `npx checkly trigger` (max. 3) */
     retries: 0,
-    verbose: true,
   },
 })
 
